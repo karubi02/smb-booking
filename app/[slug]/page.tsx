@@ -343,7 +343,7 @@ export default async function PublicSchedulePage({
           </div>
 
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div className="grid grid-cols-7 bg-teal-600">
+            <div className="grid grid-cols-7 bg-teal-600 dark:bg-teal-600">
               {dayNames.map((dayName, index) => (
                 <div key={index} className="p-1 sm:p-4 text-center">
                   <div className="text-white font-semibold text-xs sm:text-lg">{dayName}</div>
@@ -368,7 +368,7 @@ export default async function PublicSchedulePage({
                       className={`h-20 sm:h-32 border-r border-gray-200 last:border-r-0 p-1 sm:p-2 flex flex-col ${
                         daySchedule.closed 
                           ? "bg-red-100 dark:bg-red-700" 
-                          : "bg-green-50 dark:bg-green-950/50"
+                          : "bg-green-50 dark:bg-green-50"
                       } ${isToday ? "border-b-2 sm:border-b-4 border-b-green-600" : ""}`}
                     >
                       <div className="text-right mb-1 sm:mb-2">
@@ -384,27 +384,27 @@ export default async function PublicSchedulePage({
                       </div>
 
                       {daySchedule.closed ? (
-                        <div className="flex-1 flex items-start justify-center pt-0.5 sm:pt-1">
-                          <div className="text-black dark:text-white text-xs sm:text-sm">休業</div>
+                        <div className="flex-1 flex items-center justify-center pt-0.5 sm:pt-1">
+                          <div className="text-black dark:text-white text-xs sm:text-sm font-medium">休業</div>
                         </div>
                       ) : (
-                        <div className="flex-1 flex flex-col items-end justify-start text-xs sm:text-xs space-y-0.5 sm:space-y-1 pt-0.5 sm:pt-1">
+                        <div className="flex-1 flex flex-col items-end justify-start pt-0.5 sm:pt-1 overflow-hidden">
                           {(() => {
                             const effectiveHours = calculateEffectiveHours(daySchedule)
                             if (effectiveHours.periods.length === 1) {
                               // Single period - show simple format
                               const period = effectiveHours.periods[0]
                               return (
-                                <div className="text-gray-700 font-medium text-xs sm:text-xs leading-tight">
+                                <div className="text-gray-700 font-medium text-[10px] sm:text-xs leading-[10px] sm:leading-tight break-words">
                                   {formatTime(period.start)} - {formatTime(period.end)}
                                 </div>
                               )
                             } else if (effectiveHours.periods.length > 1) {
                               // Multiple periods - show each period
                               return (
-                                <div className="space-y-0 sm:space-y-0.5">
+                                <div className="space-y-0 sm:space-y-0.5 w-full">
                                   {effectiveHours.periods.map((period, index) => (
-                                    <div key={index} className="text-gray-700 font-medium text-xs sm:text-xs leading-tight">
+                                    <div key={index} className="text-gray-700 font-medium text-[10px] sm:text-xs leading-[10px] sm:leading-tight break-words">
                                       {formatTime(period.start)} - {formatTime(period.end)}
                                     </div>
                                   ))}
@@ -413,7 +413,7 @@ export default async function PublicSchedulePage({
                             } else {
                               // Fallback - should not happen with updated logic
                               return (
-                                <div className="text-gray-700 font-medium text-xs sm:text-xs leading-tight">
+                                <div className="text-gray-700 font-medium text-[10px] sm:text-xs leading-[10px] sm:leading-tight break-words">
                                   {formatTime(daySchedule.open)} - {formatTime(daySchedule.close)}
                                 </div>
                               )

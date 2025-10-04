@@ -668,9 +668,17 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
             <Button variant="outline" size="sm" onClick={() => navigateMonth("prev")}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <CardTitle className="text-xl">
-              {monthNames[currentDate.getMonth()]} {currentYear}
-            </CardTitle>
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-xl">
+                {monthNames[currentDate.getMonth()]} {currentYear}
+              </CardTitle>
+              <Badge 
+                variant={isPublic ? "default" : "secondary"}
+                className={isPublic ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" : "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"}
+              >
+                {isPublic ? "Published" : "Draft"}
+              </Badge>
+            </div>
             <Button variant="outline" size="sm" onClick={() => navigateMonth("next")}>
               <ChevronRight className="h-4 w-4" />
             </Button>
