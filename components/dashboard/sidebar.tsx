@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Home, Building2, Calendar, Settings } from "lucide-react"
+import { Home, Calendar, Settings } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -20,10 +20,14 @@ export function Sidebar() {
     <div className="flex h-full w-64 flex-col bg-sidebar border-r border-sidebar-border">
       {/* Logo */}
       <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <Building2 className="h-8 w-8 text-sidebar-primary" />
-          <span className="text-lg font-bold text-sidebar-foreground">SaaS Platform</span>
-        </div>
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+            <Calendar className="w-5 h-5 text-white" />
+          </div>
+              <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                スケジュール
+              </span>
+        </Link>
       </div>
 
       {/* Navigation */}

@@ -1,7 +1,6 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,14 +58,7 @@ export function Header({ user, profile }: HeaderProps) {
     .slice(0, 2)
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-background px-6">
-      {/* Search */}
-      <div className="flex items-center gap-4 flex-1 max-w-md">
-        <div className="relative">
-          <Input placeholder="Search..." className="pl-10 w-80" />
-        </div>
-      </div>
-
+    <header className="flex h-16 items-center justify-end border-b border-border bg-background px-6">
       {/* Right side */}
       <div className="flex items-center gap-4">
         {/* User menu */}
@@ -78,7 +70,7 @@ export function Header({ user, profile }: HeaderProps) {
               style={{ touchAction: "manipulation" }}
             >
               <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-primary text-primary-foreground">{initials}</AvatarFallback>
+                <AvatarFallback className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white">{initials}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
@@ -90,12 +82,12 @@ export function Header({ user, profile }: HeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard/profile">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </Link>
-            </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />

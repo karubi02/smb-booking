@@ -1,11 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback, memo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
+import { TimePicker } from "@/components/ui/time-picker"
 import { useToast } from "@/hooks/use-toast"
 import { createBrowserClient } from "@supabase/ssr"
 import {
@@ -20,16 +22,22 @@ import {
   AlertCircle,
   CheckCircle2,
   QrCode,
+  Plus,
+  X,
 } from "lucide-react"
 import { QRCodeModal } from "./qr-code-modal" // Added QR code modal import
+
+interface Break {
+  id: string
+  start: string
+  end: string
+}
 
 interface DaySchedule {
   open: string
   close: string
   closed: boolean
-  hasBreak: boolean
-  breakStart: string
-  breakEnd: string
+  breaks: Break[]
 }
 
 interface MonthlySchedule {
@@ -40,9 +48,7 @@ const defaultDaySchedule: DaySchedule = {
   open: "09:00",
   close: "17:00",
   closed: false,
-  hasBreak: false,
-  breakStart: "12:00",
-  breakEnd: "13:00",
+  breaks: [],
 }
 
 const monthNames = [
@@ -62,7 +68,123 @@ const monthNames = [
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-export function ScheduleClient() {
+// Helper function to add minutes to a time string
+const addMinutes = (timeStr: string, minutes: number): string => {
+  const [hours, mins] = timeStr.split(':').map(Number)
+  const totalMinutes = hours * 60 + mins + minutes
+  const newHours = Math.floor(totalMinutes / 60) % 24
+  const newMins = totalMinutes % 60
+  return `${newHours.toString().padStart(2, '0')}:${newMins.toString().padStart(2, '0')}`
+}
+
+// Memoized day card component to prevent unnecessary re-renders
+const DayCard = memo(({ 
+  day, 
+  daySchedule, 
+  isToday, 
+  onUpdate,
+  onAddBreak,
+  onRemoveBreak,
+  onUpdateBreak
+}: { 
+  day: { day: number; dateStr: string; dayOfWeek: number }
+  daySchedule: DaySchedule
+  isToday: boolean
+  onUpdate: (dateStr: string, field: keyof DaySchedule, value: string | boolean) => void
+  onAddBreak: (dateStr: string) => void
+  onRemoveBreak: (dateStr: string, breakId: string) => void
+  onUpdateBreak: (dateStr: string, breakId: string, field: keyof Break, value: string) => void
+}) => {
+  return (
+    <Card className={`${isToday ? "ring-2 ring-blue-500" : ""} ${daySchedule.closed ? "bg-red-50 dark:bg-red-900/20" : "bg-green-50 dark:bg-green-900/20"}`}>
+      <CardContent className="py-1 px-2 space-y-1">
+        <div className="flex items-center justify-between">
+          <div className="font-medium text-sm">{day.day}</div>
+          <Switch
+            checked={!daySchedule.closed}
+            onCheckedChange={(checked) => onUpdate(day.dateStr, "closed", !checked)}
+            size="sm"
+          />
+        </div>
+
+        <div className="space-y-2">
+          {!daySchedule.closed && (
+            <div className="space-y-2">
+              <div>
+                <Label className="text-xs">Open</Label>
+                <TimePicker
+                  value={daySchedule.open}
+                  onChange={(value) => onUpdate(day.dateStr, "open", value)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Close</Label>
+                <TimePicker
+                  value={daySchedule.close}
+                  onChange={(value) => onUpdate(day.dateStr, "close", value)}
+                />
+              </div>
+
+              <div className="border-t pt-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Breaks</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onAddBreak(day.dateStr)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+
+                {(daySchedule.breaks || []).map((breakItem, index) => (
+                  <div key={breakItem.id} className="space-y-1 p-2 border rounded bg-slate-50 dark:bg-slate-800">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Break {index + 1}</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onRemoveBreak(day.dateStr, breakItem.id)}
+                        className="h-4 w-4 p-0 text-red-500 hover:text-red-700"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <div>
+                        <Label className="text-xs">Start</Label>
+                        <TimePicker
+                          value={breakItem.start}
+                          onChange={(value) => onUpdateBreak(day.dateStr, breakItem.id, "start", value)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">End</Label>
+                        <TimePicker
+                          value={breakItem.end}
+                          onChange={(value) => onUpdateBreak(day.dateStr, breakItem.id, "end", value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {daySchedule.closed && <div className="text-center text-xs text-muted-foreground">Closed</div>}
+        </div>
+      </CardContent>
+    </Card>
+  )
+})
+
+interface ScheduleClientProps {
+  userId: string
+}
+
+export function ScheduleClient({ userId }: ScheduleClientProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [schedule, setSchedule] = useState<MonthlySchedule>({})
   const [loading, setLoading] = useState(false)
@@ -74,7 +196,6 @@ export function ScheduleClient() {
   const [showCreateOptions, setShowCreateOptions] = useState(false)
   const [lastSavedSchedule, setLastSavedSchedule] = useState<MonthlySchedule>({})
   const [lastSavedIsPublic, setLastSavedIsPublic] = useState(false)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false) // Added QR modal state
   const { toast } = useToast()
 
@@ -116,21 +237,53 @@ export function ScheduleClient() {
     loadSchedule()
   }, [currentMonth, currentYear])
 
-  useEffect(() => {
-    const scheduleChanged = JSON.stringify(schedule) !== JSON.stringify(lastSavedSchedule)
-    const publicChanged = isPublic !== lastSavedIsPublic
-    setHasUnsavedChanges(scheduleExists && (scheduleChanged || publicChanged))
-  }, [schedule, isPublic, lastSavedSchedule, lastSavedIsPublic, scheduleExists])
+  // Simple state-based tracking instead of expensive comparisons
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+
+  // Migration function to handle old data structure
+  const migrateScheduleData = (rawSchedule: any): MonthlySchedule => {
+    const migratedSchedule: MonthlySchedule = {}
+    
+    for (const [dateStr, dayData] of Object.entries(rawSchedule)) {
+      const daySchedule = dayData as any
+      
+      // Check if this is old format (has hasBreak, breakStart, breakEnd)
+      if (daySchedule.hasBreak !== undefined) {
+        const breaks: Break[] = []
+        
+        // Convert old break data to new format
+        if (daySchedule.hasBreak && daySchedule.breakStart && daySchedule.breakEnd) {
+          breaks.push({
+            id: `migrated-${Date.now()}`,
+            start: daySchedule.breakStart,
+            end: daySchedule.breakEnd
+          })
+        }
+        
+        migratedSchedule[dateStr] = {
+          open: daySchedule.open || "09:00",
+          close: daySchedule.close || "17:00",
+          closed: daySchedule.closed || false,
+          breaks: breaks
+        }
+      } else {
+        // Already new format or no break data
+        migratedSchedule[dateStr] = {
+          open: daySchedule.open || "09:00",
+          close: daySchedule.close || "17:00",
+          closed: daySchedule.closed || false,
+          breaks: daySchedule.breaks || []
+        }
+      }
+    }
+    
+    return migratedSchedule
+  }
 
   const loadSchedule = async () => {
     setLoading(true)
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data } = await supabase.from("profiles").select("public_slug").eq("id", user.id).single()
+      const { data } = await supabase.from("profiles").select("public_slug").eq("id", userId).single()
 
       if (data?.public_slug) {
         setPublicSlug(data.public_slug)
@@ -139,7 +292,7 @@ export function ScheduleClient() {
       const { data: scheduleData, error } = await supabase
         .from("schedules")
         .select("schedule_data, is_public")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("month", currentMonth)
         .eq("year", currentYear)
         .single()
@@ -150,17 +303,21 @@ export function ScheduleClient() {
       }
 
       if (scheduleData) {
-        setSchedule(scheduleData.schedule_data as MonthlySchedule)
+        const rawSchedule = scheduleData.schedule_data as MonthlySchedule
+        const migratedSchedule = migrateScheduleData(rawSchedule)
+        setSchedule(migratedSchedule)
         setIsPublic(scheduleData.is_public || false)
         setScheduleExists(true)
-        setLastSavedSchedule(scheduleData.schedule_data as MonthlySchedule)
+        setLastSavedSchedule(migratedSchedule)
         setLastSavedIsPublic(scheduleData.is_public || false)
+        setHasUnsavedChanges(false)
       } else {
         setSchedule({})
         setIsPublic(false)
         setScheduleExists(false)
         setLastSavedSchedule({})
         setLastSavedIsPublic(false)
+        setHasUnsavedChanges(false)
       }
       setShowCreateOptions(false)
     } catch (error) {
@@ -173,10 +330,6 @@ export function ScheduleClient() {
   const saveSchedule = async () => {
     setSaving(true)
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return
 
       let slugToUse = publicSlug
       if (isPublic && !publicSlug) {
@@ -185,7 +338,7 @@ export function ScheduleClient() {
         const { error: profileError } = await supabase
           .from("profiles")
           .update({ public_slug: newSlug })
-          .eq("id", user.id)
+          .eq("id", userId)
 
         if (profileError) {
           console.error("Error updating profile slug:", profileError)
@@ -203,7 +356,7 @@ export function ScheduleClient() {
 
       const { error } = await supabase.from("schedules").upsert(
         {
-          user_id: user.id,
+          user_id: userId,
           month: currentMonth,
           year: currentYear,
           schedule_data: schedule,
@@ -227,6 +380,7 @@ export function ScheduleClient() {
       setLastSavedSchedule({ ...schedule })
       setLastSavedIsPublic(isPublic)
       setScheduleExists(true)
+      setHasUnsavedChanges(false)
 
       toast({
         title: "Success",
@@ -244,7 +398,7 @@ export function ScheduleClient() {
     }
   }
 
-  const updateDaySchedule = (dateStr: string, field: keyof DaySchedule, value: string | boolean) => {
+  const updateDaySchedule = useCallback((dateStr: string, field: keyof DaySchedule, value: string | boolean) => {
     setSchedule((prev) => ({
       ...prev,
       [dateStr]: {
@@ -252,7 +406,65 @@ export function ScheduleClient() {
         [field]: value,
       },
     }))
-  }
+    setHasUnsavedChanges(true)
+  }, [])
+
+  const addBreak = useCallback((dateStr: string) => {
+    setSchedule((prev) => {
+      const daySchedule = prev[dateStr] || defaultDaySchedule
+      const breaks = daySchedule.breaks || []
+      const lastBreakEnd = breaks.length > 0 
+        ? breaks[breaks.length - 1].end 
+        : "12:00" // First break starts at noon
+      
+      const newBreak: Break = {
+        id: Date.now().toString(),
+        start: lastBreakEnd,
+        end: addMinutes(lastBreakEnd, 60) // Default 1 hour break
+      }
+      
+      return {
+        ...prev,
+        [dateStr]: {
+          ...daySchedule,
+          breaks: [...breaks, newBreak]
+        }
+      }
+    })
+    setHasUnsavedChanges(true)
+  }, [])
+
+  const removeBreak = useCallback((dateStr: string, breakId: string) => {
+    setSchedule((prev) => {
+      const daySchedule = prev[dateStr] || defaultDaySchedule
+      return {
+        ...prev,
+        [dateStr]: {
+          ...daySchedule,
+          breaks: (daySchedule.breaks || []).filter(b => b.id !== breakId)
+        }
+      }
+    })
+    setHasUnsavedChanges(true)
+  }, [])
+
+  const updateBreak = useCallback((dateStr: string, breakId: string, field: keyof Break, value: string) => {
+    setSchedule((prev) => {
+      const daySchedule = prev[dateStr] || defaultDaySchedule
+      return {
+        ...prev,
+        [dateStr]: {
+          ...daySchedule,
+          breaks: (daySchedule.breaks || []).map(breakItem => 
+            breakItem.id === breakId 
+              ? { ...breakItem, [field]: value }
+              : breakItem
+          )
+        }
+      }
+    })
+    setHasUnsavedChanges(true)
+  }, [])
 
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentDate((prev) => {
@@ -273,15 +485,10 @@ export function ScheduleClient() {
     const prevYear = prevDate.getFullYear()
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return
-
       const { data, error } = await supabase
         .from("schedules")
         .select("schedule_data")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("month", prevMonth)
         .eq("year", prevYear)
         .single()
@@ -410,7 +617,7 @@ export function ScheduleClient() {
       text: "All changes saved",
       icon: CheckCircle2,
       variant: "outline" as const,
-      color: "text-green-600",
+      color: "text-blue-600",
     }
   }
 
@@ -422,8 +629,12 @@ export function ScheduleClient() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Schedule</h1>
-          <p className="text-muted-foreground">Set individual opening hours for each day</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+            Schedule
+          </h1>
+          <p className="text-lg text-slate-600 dark:text-slate-300 mt-2">
+            Set individual opening hours for each day
+          </p>
         </div>
         {scheduleExists && (
           <div className="flex items-center gap-2">
@@ -442,7 +653,7 @@ export function ScheduleClient() {
               onClick={saveSchedule}
               disabled={saving}
               variant={hasUnsavedChanges ? "default" : "outline"}
-              className={hasUnsavedChanges ? "bg-primary" : ""}
+              className={hasUnsavedChanges ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700" : ""}
             >
               <Save className="h-4 w-4 mr-2" />
               {saving ? "Saving..." : hasUnsavedChanges ? "Save Changes" : "Save Schedule"}
@@ -451,7 +662,7 @@ export function ScheduleClient() {
         )}
       </div>
 
-      <Card>
+      <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
             <Button variant="outline" size="sm" onClick={() => navigateMonth("prev")}>
@@ -464,18 +675,114 @@ export function ScheduleClient() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <CardDescription>Set opening hours for each individual day</CardDescription>
         </CardHeader>
       </Card>
 
+      {loading ? (
+        <Card className="border-0 shadow-lg bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center">
+              <div className="text-slate-600 dark:text-slate-400">Loading schedule...</div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : !scheduleExists ? (
+        <Card className="border-0 shadow-lg bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+          <CardContent className="p-8">
+            <div className="text-center space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">No Schedule Found</h3>
+                <p className="text-slate-600 dark:text-slate-400">
+                  No schedule exists for {monthNames[currentDate.getMonth()]} {currentYear}
+                </p>
+              </div>
+
+              {!showCreateOptions ? (
+                <Button onClick={createNewSchedule} size="lg" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                  Create Schedule
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">How would you like to create your schedule?</p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button onClick={() => copyFromPreviousMonth(true)} variant="outline">
+                      Copy from Previous Month
+                    </Button>
+                    <Button onClick={createFromDefaults} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Start with Default Hours</Button>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowCreateOptions(false)}
+                    className="text-slate-600 dark:text-slate-400"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-0 shadow-lg bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-7 gap-2 mb-4">
+              {dayNames.map((dayName) => (
+                <div key={dayName} className="text-center text-sm font-medium text-slate-600 dark:text-slate-400 p-2">
+                  {dayName}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-2">
+              {days.map((day, index) => {
+                if (!day) {
+                  return <div key={index} className="p-2" />
+                }
+
+                const daySchedule = schedule[day.dateStr] || defaultDaySchedule
+                const isToday = new Date().toDateString() === new Date(day.dateStr).toDateString()
+
+                return (
+                  <DayCard
+                    key={day.dateStr}
+                    day={day}
+                    daySchedule={daySchedule}
+                    isToday={isToday}
+                    onUpdate={updateDaySchedule}
+                    onAddBreak={addBreak}
+                    onRemoveBreak={removeBreak}
+                    onUpdateBreak={updateBreak}
+                  />
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {scheduleExists && (
-        <Card>
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Share2 className="h-5 w-5" />
-              Public Sharing
-            </CardTitle>
-            <CardDescription>Allow customers to view your schedule with a public link</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Share2 className="h-5 w-5" />
+                  Public Sharing
+                </CardTitle>
+                <CardDescription>Allow customers to view your schedule with a public link</CardDescription>
+              </div>
+              <Badge 
+                variant="secondary" 
+                className={`${
+                  isPublic 
+                    ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" 
+                    : "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
+                }`}
+              >
+                {isPublic ? "Published" : "Draft"}
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
@@ -483,7 +790,72 @@ export function ScheduleClient() {
                 {isPublic ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                 <Label htmlFor="public-toggle">Make schedule public</Label>
               </div>
-              <Switch id="public-toggle" checked={isPublic} onCheckedChange={setIsPublic} />
+              <Switch id="public-toggle" checked={isPublic} onCheckedChange={async (checked) => {
+                setIsPublic(checked)
+                setHasUnsavedChanges(true)
+                
+                // Auto-save when public toggle changes
+                try {
+                  let slugToUse = publicSlug
+                  if (checked && !publicSlug) {
+                    const newSlug = Math.random().toString(36).substring(2, 10)
+
+                    const { error: profileError } = await supabase
+                      .from("profiles")
+                      .update({ public_slug: newSlug })
+                      .eq("id", userId)
+
+                    if (profileError) {
+                      console.error("Error updating profile slug:", profileError)
+                      toast({
+                        title: "Error",
+                        description: "Failed to generate public link. Please try again.",
+                        variant: "destructive",
+                      })
+                      return
+                    }
+
+                    slugToUse = newSlug
+                    setPublicSlug(newSlug)
+                  }
+
+                  const { error } = await supabase.from("schedules").upsert(
+                    {
+                      user_id: userId,
+                      month: currentMonth,
+                      year: currentYear,
+                      schedule_data: schedule,
+                      is_public: checked,
+                    },
+                    {
+                      onConflict: "user_id,month,year",
+                    },
+                  )
+
+                  if (error) {
+                    console.error("Error saving schedule:", error)
+                    toast({
+                      title: "Error",
+                      description: "Failed to save public status. Please try again.",
+                      variant: "destructive",
+                    })
+                    return
+                  }
+
+                  setHasUnsavedChanges(false)
+                  toast({
+                    title: "Schedule updated",
+                    description: checked ? "Schedule is now public" : "Schedule is now private",
+                  })
+                } catch (error) {
+                  console.error("Error in auto-save:", error)
+                  toast({
+                    title: "Error",
+                    description: "Failed to update public status. Please try again.",
+                    variant: "destructive",
+                  })
+                }
+              }} />
             </div>
 
             {isPublic && publicSlug && (
@@ -518,160 +890,11 @@ export function ScheduleClient() {
         </Card>
       )}
 
-      {loading ? (
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center">
-              <div className="text-muted-foreground">Loading schedule...</div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : !scheduleExists ? (
-        <Card>
-          <CardContent className="p-8">
-            <div className="text-center space-y-4">
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">No Schedule Found</h3>
-                <p className="text-muted-foreground">
-                  No schedule exists for {monthNames[currentDate.getMonth()]} {currentYear}
-                </p>
-              </div>
-
-              {!showCreateOptions ? (
-                <Button onClick={createNewSchedule} size="lg">
-                  Create Schedule
-                </Button>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">How would you like to create your schedule?</p>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button onClick={() => copyFromPreviousMonth(true)} variant="outline">
-                      Copy from Previous Month
-                    </Button>
-                    <Button onClick={createFromDefaults}>Start with Default Hours</Button>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowCreateOptions(false)}
-                    className="text-muted-foreground"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-7 gap-2 mb-4">
-              {dayNames.map((dayName) => (
-                <div key={dayName} className="text-center text-sm font-medium text-muted-foreground p-2">
-                  {dayName}
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-7 gap-2">
-              {days.map((day, index) => {
-                if (!day) {
-                  return <div key={index} className="p-2" />
-                }
-
-                const daySchedule = schedule[day.dateStr] || defaultDaySchedule
-                const isToday = new Date().toDateString() === new Date(day.dateStr).toDateString()
-
-                return (
-                  <Card key={day.dateStr} className={`${isToday ? "ring-2 ring-primary" : ""}`}>
-                    <CardContent className="p-3 space-y-3">
-                      <div className="text-center">
-                        <div className="font-medium text-sm">{day.day}</div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-center">
-                          <Switch
-                            checked={!daySchedule.closed}
-                            onCheckedChange={(checked) => updateDaySchedule(day.dateStr, "closed", !checked)}
-                            size="sm"
-                          />
-                        </div>
-
-                        {!daySchedule.closed && (
-                          <div className="space-y-2">
-                            <div>
-                              <Label className="text-xs">Open</Label>
-                              <Input
-                                type="time"
-                                value={daySchedule.open}
-                                onChange={(e) => updateDaySchedule(day.dateStr, "open", e.target.value)}
-                                className="h-8 text-xs"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs">Close</Label>
-                              <Input
-                                type="time"
-                                value={daySchedule.close}
-                                onChange={(e) => updateDaySchedule(day.dateStr, "close", e.target.value)}
-                                className="h-8 text-xs"
-                              />
-                            </div>
-
-                            <div className="border-t pt-2 space-y-2">
-                              <div className="flex items-center justify-between">
-                                <Label className="text-xs">Break</Label>
-                                <Switch
-                                  checked={daySchedule.hasBreak}
-                                  onCheckedChange={(checked) => updateDaySchedule(day.dateStr, "hasBreak", checked)}
-                                  size="sm"
-                                />
-                              </div>
-
-                              {daySchedule.hasBreak && (
-                                <div className="space-y-2">
-                                  <div>
-                                    <Label className="text-xs">Break Start</Label>
-                                    <Input
-                                      type="time"
-                                      value={daySchedule.breakStart}
-                                      onChange={(e) => updateDaySchedule(day.dateStr, "breakStart", e.target.value)}
-                                      className="h-8 text-xs"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label className="text-xs">Break End</Label>
-                                    <Input
-                                      type="time"
-                                      value={daySchedule.breakEnd}
-                                      onChange={(e) => updateDaySchedule(day.dateStr, "breakEnd", e.target.value)}
-                                      className="h-8 text-xs"
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {daySchedule.closed && <div className="text-center text-xs text-muted-foreground">Closed</div>}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <QRCodeModal
         isOpen={qrModalOpen}
         onClose={() => setQrModalOpen(false)}
         url={publicSlug ? `${window.location.origin}/${publicSlug}` : ""}
-        businessName="Business Schedule"
+        businessName="スケジュール"
       />
     </div>
   )

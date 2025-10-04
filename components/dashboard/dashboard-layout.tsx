@@ -23,11 +23,11 @@ export async function DashboardLayout({ children }: DashboardLayoutProps) {
   const { data: profile } = await supabase.from("profiles").select("display_name, phone").eq("id", user.id).single()
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-white dark:bg-slate-900">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header user={user} profile={profile} />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        <main className="flex-1 overflow-auto p-8 bg-white dark:bg-slate-900">{children}</main>
       </div>
     </div>
   )

@@ -3,7 +3,7 @@
 const { execSync } = require('child_process');
 const path = require('path');
 
-console.log('🚀 Starting development setup for SMB Booking...');
+console.log('🚀 Starting development setup for Opening Hours...');
 
 try {
   // Pull latest changes from GitHub

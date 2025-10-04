@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to pull latest changes and start development server
-echo "🚀 Starting development setup for SMB Booking..."
+echo "🚀 Starting development setup for Opening Hours..."
 
 # Change to the project directory
 cd "$(dirname "$0")"

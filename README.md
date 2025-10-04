@@ -1,4 +1,4 @@
-# SMB Booking - Schedule Management System
+# スケジュール - Schedule Management System
 
 A professional schedule management and booking system built with Next.js 15, Supabase, and Tailwind CSS.
 

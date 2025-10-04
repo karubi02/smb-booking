@@ -14,21 +14,22 @@ interface PublicScheduleNavigationProps {
   prevYear: number
   nextMonth: number
   nextYear: number
+  children?: React.ReactNode
 }
 
 const monthNames = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "1月",
+  "2月",
+  "3月",
+  "4月",
+  "5月",
+  "6月",
+  "7月",
+  "8月",
+  "9月",
+  "10月",
+  "11月",
+  "12月",
 ]
 
 export function PublicScheduleNavigation({
@@ -41,6 +42,7 @@ export function PublicScheduleNavigation({
   prevYear,
   nextMonth,
   nextYear,
+  children,
 }: PublicScheduleNavigationProps) {
   const router = useRouter()
 
@@ -57,7 +59,7 @@ export function PublicScheduleNavigation({
   }
 
   return (
-    <div className="flex items-center justify-between mb-8 px-4">
+    <div className="flex items-center justify-between w-full">
       <Button
         variant="outline"
         onClick={navigateToPrevious}
@@ -70,14 +72,14 @@ export function PublicScheduleNavigation({
             {monthNames[prevMonth - 1]} {prevYear}
           </span>
         )}
-        <span className="sm:hidden">Previous</span>
+        <span className="sm:hidden">前月</span>
       </Button>
 
-      <div className="text-center">
-        <h2 className="text-lg font-semibold">
-          {monthNames[currentMonth - 1]} {currentYear}
-        </h2>
-      </div>
+      {children && (
+        <div className="flex-1 flex justify-center">
+          {children}
+        </div>
+      )}
 
       <Button
         variant="outline"
@@ -86,7 +88,7 @@ export function PublicScheduleNavigation({
         className="flex items-center gap-2 bg-transparent"
       >
         <span className="hidden sm:inline">{hasNext && `${monthNames[nextMonth - 1]} ${nextYear}`}</span>
-        <span className="sm:hidden">Next</span>
+        <span className="sm:hidden">次月</span>
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>
