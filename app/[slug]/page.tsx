@@ -6,7 +6,6 @@ import Image from "next/image"
 import { PublicScheduleNavigation } from "@/components/schedule/public-schedule-navigation"
 
 interface Break {
-  id: string
   start: string
   end: string
 }
@@ -15,30 +14,15 @@ interface DaySchedule {
   open: string
   close: string
   closed: boolean
-  breaks: Break[]
+  breaks?: Break[]
 }
 
 interface MonthlySchedule {
-  [date: string]: DaySchedule
+  [dateStr: string]: DaySchedule
 }
 
-const monthNames = [
-  "1月",
-  "2月",
-  "3月",
-  "4月",
-  "5月",
-  "6月",
-  "7月",
-  "8月",
-  "9月",
-  "10月",
-  "11月",
-  "12月",
-]
-
-const dayNames = ["日", "月", "火", "水", "木", "金", "土"] // Sunday through Saturday in Japanese kanji
-const dayNamesEnglish = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+const dayNames = ["日", "月", "火", "水", "木", "金", "土"]
+const dayNamesEnglish = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 const defaultDaySchedule: DaySchedule = {
   open: "09:00",
@@ -47,117 +31,104 @@ const defaultDaySchedule: DaySchedule = {
   breaks: [],
 }
 
-function formatTime(time: string): string {
-  if (!time || !time.includes(":")) return "Invalid time"
-
-  try {
-    const [hours, minutes] = time.split(":")
-    const hour = Number.parseInt(hours)
-    const ampm = hour >= 12 ? "PM" : "AM"
-    const displayHour = hour % 12 || 12
-    return `${displayHour}:${minutes} ${ampm}`
-  } catch (error) {
-    return "Invalid time"
-  }
+function migrateScheduleData(scheduleData: MonthlySchedule): MonthlySchedule {
+  const migrated: MonthlySchedule = {}
+  
+  Object.entries(scheduleData).forEach(([dateStr, daySchedule]) => {
+    migrated[dateStr] = {
+      ...daySchedule,
+      breaks: daySchedule.breaks || []
+    }
+  })
+  
+  return migrated
 }
 
-// Migration function to handle old data structure
-function migrateScheduleData(rawSchedule: any): MonthlySchedule {
-  const migratedSchedule: MonthlySchedule = {}
-  
-  for (const [dateStr, dayData] of Object.entries(rawSchedule)) {
-    const daySchedule = dayData as any
-    
-    // Check if this is old format (has hasBreak, breakStart, breakEnd)
-    if (daySchedule.hasBreak !== undefined) {
-      const breaks: any[] = []
-      
-      // Convert old break data to new format
-      if (daySchedule.hasBreak && daySchedule.breakStart && daySchedule.breakEnd) {
-        breaks.push({
-          id: `migrated-${Date.now()}`,
-          start: daySchedule.breakStart,
-          end: daySchedule.breakEnd
+function formatTime24(time?: string): string {
+  if (!time || !time.includes(':')) return "--:--"
+  const [hours, minutes] = time.split(':')
+  if (!hours || !minutes) return time
+  return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`
+}
+
+function minutesToTime(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+}
+
+function timeToMinutes(time?: string): number | null {
+  if (!time || !time.includes(':')) return null
+  const [hoursStr, minutesStr] = time.split(':')
+  const hours = Number.parseInt(hoursStr, 10)
+  const minutes = Number.parseInt(minutesStr, 10)
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null
+  return hours * 60 + minutes
+}
+
+function getOpenPeriods(daySchedule?: DaySchedule | null): Array<{ start: string; end: string }> {
+  if (!daySchedule || daySchedule.closed) {
+    return []
+  }
+
+  const openMinutes = timeToMinutes(daySchedule.open)
+  const closeMinutes = timeToMinutes(daySchedule.close)
+  if (openMinutes === null || closeMinutes === null || openMinutes >= closeMinutes) {
+    return []
+  }
+
+  const breaks = (daySchedule.breaks || [])
+    .map((breakPeriod) => {
+      const startMinutes = timeToMinutes(breakPeriod.start)
+      const endMinutes = timeToMinutes(breakPeriod.end)
+      if (startMinutes === null || endMinutes === null || startMinutes >= endMinutes) {
+        return null
+      }
+      return {
+        startMinutes,
+        endMinutes,
+      }
+    })
+    .filter((value): value is { startMinutes: number; endMinutes: number } => value !== null)
+    .sort((a, b) => a.startMinutes - b.startMinutes)
+
+  const periods: Array<{ start: string; end: string }> = []
+  let segmentStart = openMinutes
+
+  for (const breakPeriod of breaks) {
+    if (breakPeriod.startMinutes >= closeMinutes) {
+      break
+    }
+
+    if (breakPeriod.startMinutes > segmentStart) {
+      const segmentEnd = Math.min(breakPeriod.startMinutes, closeMinutes)
+      if (segmentStart < segmentEnd) {
+        periods.push({
+          start: minutesToTime(segmentStart),
+          end: minutesToTime(segmentEnd),
         })
       }
-      
-      migratedSchedule[dateStr] = {
-        open: daySchedule.open || "09:00",
-        close: daySchedule.close || "17:00",
-        closed: daySchedule.closed || false,
-        breaks: breaks
-      }
-    } else {
-      // Already new format or no break data
-      migratedSchedule[dateStr] = {
-        open: daySchedule.open || "09:00",
-        close: daySchedule.close || "17:00",
-        closed: daySchedule.closed || false,
-        breaks: daySchedule.breaks || []
-      }
+    }
+
+    segmentStart = Math.max(segmentStart, breakPeriod.endMinutes)
+    if (segmentStart >= closeMinutes) {
+      break
     }
   }
-  
-  return migratedSchedule
-}
 
-// Helper function to calculate effective opening hours accounting for breaks
-function calculateEffectiveHours(daySchedule: any) {
-  if (daySchedule.closed) {
-    return { periods: [], totalHours: 0 }
-  }
-
-  const breaks = daySchedule.breaks || []
-  const periods = []
-  let currentStart = daySchedule.open
-
-  // Sort breaks by start time
-  const sortedBreaks = breaks.sort((a: any, b: any) => a.start.localeCompare(b.start))
-
-  for (const breakItem of sortedBreaks) {
-    // Add period before this break (if there's time between current start and break start)
-    if (currentStart < breakItem.start) {
-      periods.push({
-        start: currentStart,
-        end: breakItem.start
-      })
-    }
-    // Move current start to after this break
-    currentStart = breakItem.end
-  }
-
-  // Add final period from last break end to close time (if there's time)
-  if (currentStart < daySchedule.close) {
+  if (segmentStart < closeMinutes) {
     periods.push({
-      start: currentStart,
-      end: daySchedule.close
+      start: minutesToTime(segmentStart),
+      end: minutesToTime(closeMinutes),
     })
   }
 
-  // If no breaks, return single period
-  if (breaks.length === 0) {
-    return {
-      periods: [{
-        start: daySchedule.open,
-        end: daySchedule.close
-      }],
-      totalHours: 8 // Default 8 hours
-    }
+  // If no valid periods were created (e.g., breaks cover entire day), fall back to single span
+  if (periods.length === 0) {
+    periods.push({ start: formatTime24(daySchedule.open), end: formatTime24(daySchedule.close) })
   }
 
-  // Calculate total hours
-  const totalMinutes = periods.reduce((total, period) => {
-    const [startHour, startMin] = period.start.split(':').map(Number)
-    const [endHour, endMin] = period.end.split(':').map(Number)
-    const startMinutes = startHour * 60 + startMin
-    const endMinutes = endHour * 60 + endMin
-    return total + (endMinutes - startMinutes)
-  }, 0)
-
-  return {
-    periods,
-    totalHours: totalMinutes / 60
-  }
+  return periods
 }
 
 export default async function PublicSchedulePage({
@@ -174,6 +145,11 @@ export default async function PublicSchedulePage({
     
     const targetMonth = resolvedSearchParams.month ? Number.parseInt(resolvedSearchParams.month) : currentDate.getMonth() + 1
     const targetYear = resolvedSearchParams.year ? Number.parseInt(resolvedSearchParams.year) : currentDate.getFullYear()
+    
+    // Validate parsed values
+    if (isNaN(targetMonth) || isNaN(targetYear) || targetMonth < 1 || targetMonth > 12) {
+      notFound()
+    }
 
     const cookieStore = await cookies()
     const supabase = createServerClient(
@@ -194,16 +170,13 @@ export default async function PublicSchedulePage({
       .eq("public_slug", resolvedParams.slug)
       .single()
 
-    console.log("[v0] Profile data fetched:", profile)
-
     if (profileError || !profile) {
-      console.log("[v0] Profile error:", profileError)
       notFound()
     }
 
     const { data: schedule, error } = await supabase
       .from("schedules")
-      .select("schedule_data, month, year, user_id")
+      .select("schedule_data, month, year, user_id, created_at")
       .eq("user_id", profile.id)
       .eq("is_public", true)
       .eq("month", targetMonth)
@@ -239,7 +212,6 @@ export default async function PublicSchedulePage({
       .maybeSingle()
 
     const businessName = profile.business_name || profile.display_name || "Business"
-    console.log("[v0] Business name being used:", businessName)
 
     const scheduleExists = Boolean(schedule)
     if (!scheduleExists) {
@@ -309,149 +281,121 @@ export default async function PublicSchedulePage({
     }
 
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
         <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
-          {/* Banner Section */}
-          <div className="relative mb-4 sm:mb-[26px]">
-            {/* Banner Background */}
-            {profile.banner_url ? (
-              <div 
-                className="absolute inset-x-0 top-0 h-[120px] sm:h-[200px] rounded-lg bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${profile.banner_url})` }}
-              ></div>
-            ) : (
-              <div className="absolute inset-x-0 top-0 h-[120px] sm:h-[200px] bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg"></div>
-            )}
-            
-            {/* Dark overlay for better text readability */}
-            <div className="absolute inset-x-0 top-0 h-[120px] sm:h-[200px] bg-black/20 rounded-lg"></div>
-            
-            {/* Content over Banner */}
-            <div className="relative z-10 h-[120px] sm:h-[200px] flex flex-col items-center justify-center text-center">
-              {/* Business Logo */}
-              <div className="flex justify-center mb-2 sm:mb-4">
-                {profile.logo_url ? (
-                  <div className="w-[50px] h-[50px] sm:w-[75px] sm:h-[75px] rounded-full border-2 border-white shadow-lg overflow-hidden">
-                    <Image 
-                      src={profile.logo_url} 
-                      alt={`${businessName} logo`}
-                      width={75}
-                      height={75}
-                      className="w-full h-full object-cover"
-                      priority
-                    />
-                  </div>
-                ) : (
-                  <div className="w-[50px] h-[50px] sm:w-[75px] sm:h-[75px] rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  </div>
-                )}
-              </div>
+            {/* Banner Section */}
+            <div className="relative mb-6 sm:mb-10">
+              {/* Banner Background */}
+              {profile.banner_url ? (
+                <div 
+                  className="absolute inset-x-0 top-0 h-[160px] sm:h-[240px] rounded-lg bg-cover bg-center bg-no-repeat"
+                  style={{
+                    backgroundImage: `url(${profile.banner_url})`,
+                  }}
+                />
+              ) : (
+                <div className="absolute inset-x-0 top-0 h-[160px] sm:h-[240px] rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 dark:from-slate-700 dark:to-slate-900" />
+              )}
               
-              <h1 className="text-xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">{businessName}</h1>
-              <p className="text-sm sm:text-base text-white/90 drop-shadow">
-                {monthNames[month]} {year} スケジュール
+              {/* Overlay for better text readability */}
+              <div className="absolute inset-x-0 top-0 h-[160px] sm:h-[240px] rounded-lg bg-black/20 dark:bg-black/40" />
+              
+              {/* Content */}
+              <div className="relative flex flex-col items-center justify-center h-[160px] sm:h-[240px] px-4">
+                {/* Logo */}
+                {profile.logo_url ? (
+                  <Image
+                    src={profile.logo_url}
+                    alt="Business Logo"
+                    width={60}
+                    height={60}
+                  className="rounded-lg mb-3 sm:mb-5 shadow-lg"
+                />
+              ) : (
+                <div className="w-[70px] h-[70px] sm:w-[90px] sm:h-[90px] bg-white/20 dark:bg-white/10 rounded-lg mb-3 sm:mb-5 flex items-center justify-center shadow-lg">
+                  <span className="text-white/80 dark:text-white/60 text-2xl sm:text-3xl font-bold">LOGO</span>
+                </div>
+              )}
+              
+              {/* Business Name */}
+              <h1 className="text-white text-2xl sm:text-4xl font-bold text-center mb-2 sm:mb-3 drop-shadow-lg">
+                {businessName}
+              </h1>
+              
+              {/* Schedule Title */}
+              <p className="text-white/90 dark:text-white/80 text-base sm:text-xl text-center drop-shadow-md">
+                {month + 1}月 {year} スケジュール
               </p>
+              </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div className="grid grid-cols-7 bg-teal-600 dark:bg-teal-600">
-              {dayNames.map((dayName, index) => (
-                <div key={index} className="p-1 sm:p-4 text-center">
-                  <div className="text-white font-semibold text-xs sm:text-lg">{dayName}</div>
-                  <div className="text-teal-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{dayNamesEnglish[index]}</div>
+          {/* Calendar */}
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700">
+            {/* Day Headers */}
+            <div className="grid grid-cols-7 border-b border-gray-200 dark:border-slate-700">
+              {dayNames.map((day, index) => (
+                <div
+                  key={index}
+                  className="p-2 sm:p-4 text-center text-xs sm:text-sm font-medium text-gray-600 dark:text-slate-400 bg-gray-50 dark:bg-slate-700/50"
+                >
+                  <div className="text-base sm:text-lg text-gray-700 dark:text-slate-200">{day}</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400 dark:text-slate-400">{dayNamesEnglish[index]}</div>
                 </div>
               ))}
             </div>
 
-            {weeks.map((week, weekIndex) => (
-              <div key={weekIndex} className="grid grid-cols-7 border-b border-gray-200 last:border-b-0">
-                {week.map((day, dayIndex) => {
-                  if (!day) {
-                    return <div key={dayIndex} className="h-20 sm:h-32 border-r border-gray-200 last:border-r-0" />
-                  }
-
-                  const daySchedule = day.schedule
-                  const isToday = new Date().toDateString() === new Date(day.dateStr).toDateString()
-                  const isFallbackView = !scheduleExists
-                  const isClosed = scheduleExists ? daySchedule?.closed : false
-
-                  return (
-                    <div
-                      key={day.dateStr}
-                      className={`h-20 sm:h-32 border-r border-gray-200 last:border-r-0 p-1 sm:p-2 flex flex-col ${
-                        isFallbackView
-                          ? "bg-gray-100 dark:bg-gray-800/40"
-                          : isClosed
-                            ? "bg-red-100 dark:bg-red-700"
-                            : "bg-green-50 dark:bg-green-50"
-                      } ${isToday ? "border-b-2 sm:border-b-4 border-b-green-600" : ""}`}
-                    >
-                      <div className="text-right mb-1 sm:mb-2">
-                        <span className={`text-sm sm:text-lg font-semibold ${
-                          isClosed 
-                            ? "text-black dark:text-white" 
-                            : isToday 
-                              ? "text-blue-600" 
-                              : "text-gray-700"
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 auto-rows-max">
+              {weeks.map((week, weekIndex) =>
+                week.map((day, dayIndex) => (
+                  <div
+                    key={`${weekIndex}-${dayIndex}`}
+                    className={`border-r border-b border-gray-200 dark:border-slate-700 last:border-r-0 ${
+                      day ? 'min-h-[80px] sm:min-h-[128px] p-2 sm:p-4' : 'min-h-[80px] sm:min-h-[128px]'
+                    }`}
+                  >
+                    {day ? (
+                      <div className="h-full flex flex-col">
+                        {/* Date */}
+                        <div className={`text-sm sm:text-base font-medium mb-1 sm:mb-2 ${
+                          day.schedule?.closed 
+                            ? 'text-red-400 dark:text-red-400' 
+                            : 'text-gray-900 dark:text-slate-100'
                         }`}>
-                          {String(day.day).padStart(2, "0")}
-                        </span>
-                      </div>
+                          {day.day}
+                        </div>
 
-                      {isFallbackView ? (
-                        <div className="flex-1" />
-                      ) : isClosed ? (
-                        <div className="flex-1 flex items-center justify-center pt-0.5 sm:pt-1">
-                          <div className="text-black dark:text-white text-xs sm:text-sm font-medium">休業</div>
-                        </div>
-                      ) : (
-                        <div className="flex-1 flex flex-col items-end justify-start pt-0.5 sm:pt-1 overflow-hidden">
-                          {(() => {
-                            const effectiveHours = calculateEffectiveHours(daySchedule as DaySchedule)
-                            if (effectiveHours.periods.length === 1) {
-                              // Single period - show simple format
-                              const period = effectiveHours.periods[0]
-                              return (
-                                <div className="text-gray-700 font-medium text-[10px] sm:text-xs leading-[10px] sm:leading-tight break-words">
-                                  {formatTime(period.start)} - {formatTime(period.end)}
-                                </div>
-                              )
-                            } else if (effectiveHours.periods.length > 1) {
-                              // Multiple periods - show each period
-                              return (
-                                <div className="space-y-0 sm:space-y-0.5 w-full">
-                                  {effectiveHours.periods.map((period, index) => (
-                                    <div key={index} className="text-gray-700 font-medium text-[10px] sm:text-xs leading-[10px] sm:leading-tight break-words">
-                                      {formatTime(period.start)} - {formatTime(period.end)}
-                                    </div>
-                                  ))}
-                                </div>
-                              )
-                            } else {
-                              // Fallback - should not happen with updated logic
-                              return (
-                                <div className="text-gray-700 font-medium text-[10px] sm:text-xs leading-[10px] sm:leading-tight break-words">
-                                  {formatTime(daySchedule.open)} - {formatTime(daySchedule.close)}
-                                </div>
-                              )
-                            }
-                          })()}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            ))}
+                        {/* Schedule Content */}
+                        {!scheduleExists ? (
+                          <div className="flex-1 flex items-center justify-center">
+                            <div className="text-gray-400 dark:text-slate-500 text-xs">-</div>
+                          </div>
+                        ) : day.schedule?.closed ? (
+                          <div className="flex flex-col items-start text-xs sm:text-sm text-red-400 dark:text-red-400">
+                            休業
+                          </div>
+                        ) : (
+                          <div className="flex flex-col space-y-1 text-[11px] sm:text-xs text-gray-700 dark:text-slate-300 leading-tight text-left">
+                            {getOpenPeriods(day.schedule).map((period, periodIndex) => (
+                              <div key={periodIndex} className="font-semibold text-gray-900 dark:text-slate-100">
+                                {period.start}〜{period.end}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="h-full flex items-center justify-center">
+                        {/* Empty cell for days from previous/next month */}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
-          {/* Navigation and Last Updated Row */}
+          {/* Navigation and Footer */}
           <div className="mt-4 sm:mt-6">
             <PublicScheduleNavigation
               slug={resolvedParams.slug}
@@ -464,9 +408,13 @@ export default async function PublicSchedulePage({
               nextMonth={nextMonth}
               nextYear={nextYear}
             >
-              <p className="text-xs sm:text-sm text-gray-500 text-center">スケジュール最終更新: {new Date().toLocaleDateString()}</p>
+              <p className="text-xs sm:text-sm text-gray-500 text-center">
+                スケジュール最終更新: {schedule?.created_at ? new Date(schedule.created_at).toLocaleDateString('ja-JP') : 'N/A'}
+              </p>
             </PublicScheduleNavigation>
           </div>
+
+          {/* No Schedule Message */}
           {!scheduleExists && (
             <div className="mt-4 sm:mt-6 text-center text-sm sm:text-base text-gray-600 dark:text-gray-300">
               現在、公開スケジュールはありません。最新情報をお待ちください。
@@ -476,7 +424,7 @@ export default async function PublicSchedulePage({
       </div>
     )
   } catch (error) {
-    console.error("Public schedule page error:", error)
+    console.error("Error in PublicSchedulePage:", error)
     notFound()
   }
 }
