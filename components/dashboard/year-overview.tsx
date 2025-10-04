@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 interface Schedule {
   id: string
@@ -30,6 +31,7 @@ const monthNamesShort = [
 
 export function YearOverview({ schedules }: YearOverviewProps) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const router = useRouter()
 
   // Get all years that have schedules
   const yearsWithSchedules = Array.from(
@@ -55,6 +57,18 @@ export function YearOverview({ schedules }: YearOverviewProps) {
 
   const canGoPrevious = selectedYear > 2020 // Reasonable limit
   const canGoNext = selectedYear < new Date().getFullYear() + 5 // 5 years ahead
+
+  const handleMonthClick = (monthNumber: number) => {
+    const hasSchedule = monthsWithSchedules.has(monthNumber)
+    
+    if (hasSchedule) {
+      // Navigate to the schedule page for this month
+      router.push(`/dashboard/schedule?month=${monthNumber}&year=${selectedYear}`)
+    } else {
+      // Navigate to create new schedule for this month
+      router.push(`/dashboard/schedule?month=${monthNumber}&year=${selectedYear}&new=true`)
+    }
+  }
 
   return (
     <Card className="border-0 shadow-lg bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
@@ -96,17 +110,16 @@ export function YearOverview({ schedules }: YearOverviewProps) {
             const monthNumber = index + 1
             const hasSchedule = monthsWithSchedules.has(monthNumber)
             const hasPublicSchedule = monthsWithPublicSchedules.has(monthNumber)
-            const isCurrentMonth = new Date().getMonth() === index && new Date().getFullYear() === selectedYear
             
             return (
               <div
                 key={monthNumber}
+                onClick={() => handleMonthClick(monthNumber)}
                 className={cn(
-                  "relative p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md",
+                  "relative p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md cursor-pointer",
                   hasSchedule
-                    ? "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 border-blue-200 dark:border-blue-800"
-                    : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700",
-                  isCurrentMonth && "ring-2 ring-blue-500 ring-opacity-50"
+                    ? "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 border-blue-200 dark:border-blue-800 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/50 dark:hover:to-indigo-900/50"
+                    : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                 )}
               >
                 <div className="text-center">
@@ -129,20 +142,17 @@ export function YearOverview({ schedules }: YearOverviewProps) {
                   </div>
 
                   {hasSchedule && (
-                    <div className="mt-2 space-y-1">
-                      <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                        Active
-                      </div>
-                      {hasPublicSchedule && (
+                    <div className="mt-2">
+                      {hasPublicSchedule ? (
                         <div className="text-xs text-green-600 dark:text-green-400 font-medium">
-                          Public
+                          Published
+                        </div>
+                      ) : (
+                        <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                          Draft
                         </div>
                       )}
                     </div>
-                  )}
-
-                  {isCurrentMonth && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
                   )}
                 </div>
               </div>
@@ -150,23 +160,6 @@ export function YearOverview({ schedules }: YearOverviewProps) {
           })}
         </div>
 
-        {/* Legend */}
-        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
-          <div className="flex items-center justify-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-              <span className="text-slate-600 dark:text-slate-400">Has Schedule</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
-              <span className="text-slate-600 dark:text-slate-400">No Schedule</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full ring-2 ring-blue-500 ring-opacity-50"></div>
-              <span className="text-slate-600 dark:text-slate-400">Current Month</span>
-            </div>
-          </div>
-        </div>
       </CardContent>
     </Card>
   )

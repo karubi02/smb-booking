@@ -1,8 +1,9 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 interface PublicScheduleNavigationProps {
   slug: string
@@ -45,16 +46,23 @@ export function PublicScheduleNavigation({
   children,
 }: PublicScheduleNavigationProps) {
   const router = useRouter()
+  const [isNavigating, setIsNavigating] = useState<'prev' | 'next' | null>(null)
 
   const navigateToPrevious = () => {
-    if (hasPrevious) {
+    if (hasPrevious && !isNavigating) {
+      setIsNavigating('prev')
       router.push(`/${slug}?month=${prevMonth}&year=${prevYear}`)
+      // Reset loading state after navigation completes
+      setTimeout(() => setIsNavigating(null), 1000)
     }
   }
 
   const navigateToNext = () => {
-    if (hasNext) {
+    if (hasNext && !isNavigating) {
+      setIsNavigating('next')
       router.push(`/${slug}?month=${nextMonth}&year=${nextYear}`)
+      // Reset loading state after navigation completes
+      setTimeout(() => setIsNavigating(null), 1000)
     }
   }
 
@@ -63,16 +71,24 @@ export function PublicScheduleNavigation({
       <Button
         variant="outline"
         onClick={navigateToPrevious}
-        disabled={!hasPrevious}
+        disabled={!hasPrevious || isNavigating === 'prev'}
         className="flex items-center gap-2 bg-transparent"
       >
-        <ChevronLeft className="h-4 w-4" />
-        {hasPrevious && (
+        {isNavigating === 'prev' ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <ChevronLeft className="h-4 w-4" />
+        )}
+        {hasPrevious && !isNavigating && (
           <span className="hidden sm:inline">
             {monthNames[prevMonth - 1]} {prevYear}
           </span>
         )}
-        <span className="sm:hidden">前月</span>
+        {isNavigating === 'prev' ? (
+          <span className="text-xs">読み込み中...</span>
+        ) : (
+          <span className="sm:hidden">前月</span>
+        )}
       </Button>
 
       {children && (
@@ -84,12 +100,22 @@ export function PublicScheduleNavigation({
       <Button
         variant="outline"
         onClick={navigateToNext}
-        disabled={!hasNext}
+        disabled={!hasNext || isNavigating === 'next'}
         className="flex items-center gap-2 bg-transparent"
       >
-        <span className="hidden sm:inline">{hasNext && `${monthNames[nextMonth - 1]} ${nextYear}`}</span>
-        <span className="sm:hidden">次月</span>
-        <ChevronRight className="h-4 w-4" />
+        {isNavigating === 'next' ? (
+          <span className="text-xs">読み込み中...</span>
+        ) : (
+          <>
+            <span className="hidden sm:inline">{hasNext && `${monthNames[nextMonth - 1]} ${nextYear}`}</span>
+            <span className="sm:hidden">次月</span>
+          </>
+        )}
+        {isNavigating === 'next' ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <ChevronRight className="h-4 w-4" />
+        )}
       </Button>
     </div>
   )

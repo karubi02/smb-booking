@@ -10,12 +10,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { LogOut, User } from "lucide-react"
+import { LogOut, User, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import Link from "next/link"
+import { useSidebar } from "./sidebar-context"
 
 interface HeaderProps {
   user: SupabaseUser
@@ -27,6 +28,7 @@ interface HeaderProps {
 export function Header({ user, profile }: HeaderProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { toggleSidebar, isCollapsed } = useSidebar()
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -58,7 +60,22 @@ export function Header({ user, profile }: HeaderProps) {
     .slice(0, 2)
 
   return (
-    <header className="flex h-16 items-center justify-end border-b border-border bg-background px-6">
+    <header className="flex h-16 items-center justify-between border-b border-border bg-background px-6">
+      {/* Left side - Sidebar toggle */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={toggleSidebar}
+        className="h-10 w-10 p-0"
+        title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {isCollapsed ? (
+          <ChevronsRight className="h-5 w-5" />
+        ) : (
+          <ChevronsLeft className="h-5 w-5" />
+        )}
+      </Button>
+
       {/* Right side */}
       <div className="flex items-center gap-4">
         {/* User menu */}

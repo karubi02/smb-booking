@@ -1,11 +1,13 @@
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { YearOverview } from "@/components/dashboard/year-overview"
+import { PublicViewButton } from "@/components/dashboard/public-view-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/server"
 import { Calendar, Users, Clock, TrendingUp, Plus, Settings, BarChart3, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
+import { calculateAverageHours, calculateTrend } from "@/lib/schedule-utils"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -18,14 +20,14 @@ export default async function DashboardPage() {
     return null
   }
 
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+  const { data: profile } = await supabase.from("profiles").select("display_name, business_name, phone, public_slug, logo_url, banner_url").eq("id", user.id).single()
 
   // Fetch actual statistics
   const [schedulesResult, viewsResult] = await Promise.all([
     // Get all schedules for the user
-    supabase.from("schedules").select("id, month, year, is_public, created_at").eq("user_id", user.id),
-    // Get view counts (we'll simulate this since we don't have analytics yet)
-    Promise.resolve({ data: [], error: null })
+    supabase.from("schedules").select("id, month, year, is_public, created_at, total_hours").eq("user_id", user.id),
+    // Get view counts using the database function
+    supabase.rpc('get_user_view_counts', { user_uuid: user.id })
   ])
 
   const schedules = schedulesResult.data || []
@@ -40,13 +42,34 @@ export default async function DashboardPage() {
   // Calculate months with schedules (unique month/year combinations)
   const uniqueMonths = new Set(schedules.map(s => `${s.year}-${s.month}`)).size
   
-  // Calculate average months open (this is a simplified calculation)
-  const avgMonthsOpen = uniqueMonths > 0 ? uniqueMonths : 0
+  // Calculate average hours per month
+  const averageHours = calculateAverageHours(schedules)
   
-  // Simulate view counts (in a real app, you'd track this)
-  const totalViews = Math.floor(Math.random() * 1000) + 100 // Simulated
-  const lastMonthViews = Math.floor(totalViews * 0.8) // Simulated
-  const growthPercentage = lastMonthViews > 0 ? Math.round(((totalViews - lastMonthViews) / lastMonthViews) * 100) : 0
+  // Calculate trend (compare last 3 months vs previous 3 months)
+  const currentDate = new Date()
+  const threeMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 2, 1)
+  const sixMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 5, 1)
+  
+  const recentSchedules = schedules.filter(s => {
+    const scheduleDate = new Date(s.year, s.month - 1, 1)
+    return scheduleDate >= threeMonthsAgo && scheduleDate <= currentDate
+  })
+  
+  const previousSchedules = schedules.filter(s => {
+    const scheduleDate = new Date(s.year, s.month - 1, 1)
+    return scheduleDate >= sixMonthsAgo && scheduleDate < threeMonthsAgo
+  })
+  
+  const recentAverage = calculateAverageHours(recentSchedules)
+  const previousAverage = calculateAverageHours(previousSchedules)
+  const trend = calculateTrend(recentAverage, previousAverage)
+  
+  // Get real view counts from database
+  const viewCounts = views?.[0] || { total_views: 0, last_month_views: 0, this_month_views: 0 }
+  const totalViews = Number(viewCounts.total_views) || 0
+  const lastMonthViews = Number(viewCounts.last_month_views) || 0
+  const thisMonthViews = Number(viewCounts.this_month_views) || 0
+  const growthPercentage = lastMonthViews > 0 ? Math.round(((thisMonthViews - lastMonthViews) / lastMonthViews) * 100) : 0
 
   return (
     <DashboardLayout>
@@ -68,6 +91,7 @@ export default async function DashboardPage() {
                 New Schedule
               </Button>
             </Link>
+            <PublicViewButton slug={profile?.public_slug} />
           </div>
         </div>
 
@@ -95,19 +119,28 @@ export default async function DashboardPage() {
 
           <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300">Months Active</CardTitle>
-              <Users className="h-4 w-4 text-green-600" />
+              <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300">Avg Hours/Month</CardTitle>
+              <Clock className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              {avgMonthsOpen > 0 ? (
+              {averageHours > 0 ? (
                 <>
-                  <div className="text-3xl font-bold text-green-900 dark:text-green-100">{avgMonthsOpen}</div>
-                  <p className="text-xs text-green-600 dark:text-green-400">months with schedules</p>
+                  <div className="text-3xl font-bold text-green-900 dark:text-green-100">{averageHours.toFixed(1)}h</div>
+                  <div className="flex items-center gap-1 mt-1">
+                    {trend.direction === 'up' ? (
+                      <TrendingUp className="h-3 w-3 text-green-600" />
+                    ) : trend.direction === 'down' ? (
+                      <TrendingUp className="h-3 w-3 text-red-600 rotate-180" />
+                    ) : null}
+                    <p className={`text-xs ${trend.direction === 'up' ? 'text-green-600' : trend.direction === 'down' ? 'text-red-600' : 'text-green-600'}`}>
+                      {trend.direction === 'up' ? `+${trend.percentage}%` : trend.direction === 'down' ? `-${trend.percentage}%` : '0%'} vs last 3 months
+                    </p>
+                  </div>
                 </>
               ) : (
                 <>
-                  <div className="text-3xl font-bold text-green-900 dark:text-green-100">0</div>
-                  <p className="text-xs text-green-600 dark:text-green-400">Data not available yet</p>
+                  <div className="text-3xl font-bold text-green-900 dark:text-green-100">0h</div>
+                  <p className="text-xs text-green-600 dark:text-green-400">No data available yet</p>
                 </>
               )}
             </CardContent>

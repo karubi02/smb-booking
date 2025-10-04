@@ -1,3 +1,4 @@
+import React from "react"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
@@ -187,11 +188,11 @@ export default async function PublicSchedulePage({
       },
     )
 
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("id, display_name, business_name, logo_url, banner_url")
-          .eq("public_slug", resolvedParams.slug)
-          .single()
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, display_name, business_name, logo_url, banner_url")
+      .eq("public_slug", resolvedParams.slug)
+      .single()
 
     console.log("[v0] Profile data fetched:", profile)
 
@@ -207,10 +208,11 @@ export default async function PublicSchedulePage({
       .eq("is_public", true)
       .eq("month", targetMonth)
       .eq("year", targetYear)
-      .single()
+      .maybeSingle()
 
-    if (error || !schedule) {
-      notFound()
+    if (error) {
+      console.error("Schedule query error:", error)
+      throw error
     }
 
     const prevMonth = targetMonth === 1 ? 12 : targetMonth - 1
@@ -239,21 +241,36 @@ export default async function PublicSchedulePage({
     const businessName = profile.business_name || profile.display_name || "Business"
     console.log("[v0] Business name being used:", businessName)
 
-    const rawScheduleData = schedule.schedule_data as MonthlySchedule
-
-    if (!rawScheduleData || typeof rawScheduleData !== "object") {
-      notFound()
+    const scheduleExists = Boolean(schedule)
+    if (!scheduleExists) {
+      console.log("No public schedule found:", {
+        profileId: profile.id,
+        targetMonth,
+        targetYear,
+      })
     }
+
+    const rawScheduleData = (schedule?.schedule_data as MonthlySchedule) || {}
 
     // Migrate old data structure to new breaks format
     const scheduleData = migrateScheduleData(rawScheduleData)
 
-    const year = schedule.year
-    const month = schedule.month - 1 // JavaScript months are 0-indexed
+    const resolvedYear = schedule?.year ?? targetYear
+    const resolvedMonthValue = schedule?.month ?? targetMonth
 
-    if (!year || !schedule.month || year < 2020 || year > 2030 || schedule.month < 1 || schedule.month > 12) {
+    if (
+      !resolvedYear ||
+      !resolvedMonthValue ||
+      resolvedYear < 2020 ||
+      resolvedYear > 2030 ||
+      resolvedMonthValue < 1 ||
+      resolvedMonthValue > 12
+    ) {
       notFound()
     }
+
+    const month = resolvedMonthValue - 1 // JavaScript months are 0-indexed
+    const year = resolvedYear
 
     const firstDayOfMonth = new Date(year, month, 1).getDay()
     const daysInMonth = new Date(year, month + 1, 0).getDate()
@@ -275,7 +292,7 @@ export default async function PublicSchedulePage({
         dayOfWeek,
         dayName: dayNames[dayOfWeek],
         dayNameEnglish: dayNamesEnglish[dayOfWeek],
-        schedule: scheduleData[dateStr] || defaultDaySchedule,
+        schedule: scheduleExists ? scheduleData[dateStr] || defaultDaySchedule : null,
       })
 
       if (currentWeek.length === 7) {
@@ -361,19 +378,23 @@ export default async function PublicSchedulePage({
 
                   const daySchedule = day.schedule
                   const isToday = new Date().toDateString() === new Date(day.dateStr).toDateString()
+                  const isFallbackView = !scheduleExists
+                  const isClosed = scheduleExists ? daySchedule?.closed : false
 
                   return (
                     <div
                       key={day.dateStr}
                       className={`h-20 sm:h-32 border-r border-gray-200 last:border-r-0 p-1 sm:p-2 flex flex-col ${
-                        daySchedule.closed 
-                          ? "bg-red-100 dark:bg-red-700" 
-                          : "bg-green-50 dark:bg-green-50"
+                        isFallbackView
+                          ? "bg-gray-100 dark:bg-gray-800/40"
+                          : isClosed
+                            ? "bg-red-100 dark:bg-red-700"
+                            : "bg-green-50 dark:bg-green-50"
                       } ${isToday ? "border-b-2 sm:border-b-4 border-b-green-600" : ""}`}
                     >
                       <div className="text-right mb-1 sm:mb-2">
                         <span className={`text-sm sm:text-lg font-semibold ${
-                          daySchedule.closed 
+                          isClosed 
                             ? "text-black dark:text-white" 
                             : isToday 
                               ? "text-blue-600" 
@@ -383,14 +404,16 @@ export default async function PublicSchedulePage({
                         </span>
                       </div>
 
-                      {daySchedule.closed ? (
+                      {isFallbackView ? (
+                        <div className="flex-1" />
+                      ) : isClosed ? (
                         <div className="flex-1 flex items-center justify-center pt-0.5 sm:pt-1">
                           <div className="text-black dark:text-white text-xs sm:text-sm font-medium">休業</div>
                         </div>
                       ) : (
                         <div className="flex-1 flex flex-col items-end justify-start pt-0.5 sm:pt-1 overflow-hidden">
                           {(() => {
-                            const effectiveHours = calculateEffectiveHours(daySchedule)
+                            const effectiveHours = calculateEffectiveHours(daySchedule as DaySchedule)
                             if (effectiveHours.periods.length === 1) {
                               // Single period - show simple format
                               const period = effectiveHours.periods[0]
@@ -432,8 +455,8 @@ export default async function PublicSchedulePage({
           <div className="mt-4 sm:mt-6">
             <PublicScheduleNavigation
               slug={resolvedParams.slug}
-              currentMonth={targetMonth}
-              currentYear={targetYear}
+              currentMonth={resolvedMonthValue}
+              currentYear={year}
               hasPrevious={!!prevSchedule}
               hasNext={!!nextSchedule}
               prevMonth={prevMonth}
@@ -444,6 +467,11 @@ export default async function PublicSchedulePage({
               <p className="text-xs sm:text-sm text-gray-500 text-center">スケジュール最終更新: {new Date().toLocaleDateString()}</p>
             </PublicScheduleNavigation>
           </div>
+          {!scheduleExists && (
+            <div className="mt-4 sm:mt-6 text-center text-sm sm:text-base text-gray-600 dark:text-gray-300">
+              現在、公開スケジュールはありません。最新情報をお待ちください。
+            </div>
+          )}
         </div>
       </div>
     )

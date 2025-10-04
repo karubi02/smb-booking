@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback, memo } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { TimePicker } from "@/components/ui/time-picker"
 import { useToast } from "@/hooks/use-toast"
@@ -22,10 +24,12 @@ import {
   AlertCircle,
   CheckCircle2,
   QrCode,
+  Trash2,
   Plus,
   X,
 } from "lucide-react"
 import { QRCodeModal } from "./qr-code-modal" // Added QR code modal import
+import { calculateTotalHours } from "@/lib/schedule-utils"
 
 interface Break {
   id: string
@@ -185,18 +189,39 @@ interface ScheduleClientProps {
 }
 
 export function ScheduleClient({ userId }: ScheduleClientProps) {
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  
+  // Initialize currentDate from URL parameters or current date
+  const getInitialDate = () => {
+    const monthParam = searchParams.get('month')
+    const yearParam = searchParams.get('year')
+    
+    if (monthParam && yearParam) {
+      const month = parseInt(monthParam)
+      const year = parseInt(yearParam)
+      // JavaScript Date months are 0-based, so subtract 1
+      return new Date(year, month - 1, 1)
+    }
+    
+    return new Date()
+  }
+  
+  const [currentDate, setCurrentDate] = useState(getInitialDate())
   const [schedule, setSchedule] = useState<MonthlySchedule>({})
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [isPublic, setIsPublic] = useState(false)
   const [publicSlug, setPublicSlug] = useState<string | null>(null)
+  const [autoCreated, setAutoCreated] = useState(false)
   const [copyingLink, setCopyingLink] = useState(false)
   const [scheduleExists, setScheduleExists] = useState(false)
   const [showCreateOptions, setShowCreateOptions] = useState(false)
   const [lastSavedSchedule, setLastSavedSchedule] = useState<MonthlySchedule>({})
   const [lastSavedIsPublic, setLastSavedIsPublic] = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false) // Added QR modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false) // Added delete modal state
+  const [isDeleting, setIsDeleting] = useState(false) // Added deleting state
   const { toast } = useToast()
 
   const supabase = createBrowserClient(
@@ -236,6 +261,15 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
   useEffect(() => {
     loadSchedule()
   }, [currentMonth, currentYear])
+
+  // Auto-show create options when new=true is in URL and no schedule exists
+  useEffect(() => {
+    const isNew = searchParams.get('new') === 'true'
+    if (isNew && !scheduleExists && !autoCreated && Object.keys(schedule).length === 0 && !loading) {
+      setAutoCreated(true)
+      setShowCreateOptions(true)
+    }
+  }, [scheduleExists, autoCreated, schedule, loading, searchParams])
 
   // Simple state-based tracking instead of expensive comparisons
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
@@ -354,6 +388,9 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
         setPublicSlug(newSlug)
       }
 
+      // Calculate total hours for this schedule
+      const totalHours = calculateTotalHours(schedule, currentMonth, currentYear)
+
       const { error } = await supabase.from("schedules").upsert(
         {
           user_id: userId,
@@ -361,6 +398,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
           year: currentYear,
           schedule_data: schedule,
           is_public: isPublic,
+          total_hours: totalHours,
         },
         {
           onConflict: "user_id,month,year",
@@ -467,15 +505,66 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
   }, [])
 
   const navigateMonth = (direction: "prev" | "next") => {
-    setCurrentDate((prev) => {
-      const newDate = new Date(prev)
-      if (direction === "prev") {
-        newDate.setMonth(prev.getMonth() - 1)
-      } else {
-        newDate.setMonth(prev.getMonth() + 1)
+    const newDate = new Date(currentDate)
+    if (direction === "prev") {
+      newDate.setMonth(currentDate.getMonth() - 1)
+    } else {
+      newDate.setMonth(currentDate.getMonth() + 1)
+    }
+    
+    // Update state
+    setCurrentDate(newDate)
+    
+    // Update URL parameters
+    const newMonth = newDate.getMonth() + 1 // Convert to 1-based
+    const newYear = newDate.getFullYear()
+    router.push(`/dashboard/schedule?month=${newMonth}&year=${newYear}`)
+  }
+
+  const deleteSchedule = async () => {
+    setIsDeleting(true)
+    try {
+      const { error } = await supabase
+        .from("schedules")
+        .delete()
+        .eq("user_id", userId)
+        .eq("month", currentMonth)
+        .eq("year", currentYear)
+
+      if (error) {
+        console.error("Error deleting schedule:", error)
+        toast({
+          title: "Error",
+          description: "Failed to delete schedule. Please try again.",
+          variant: "destructive",
+        })
+        return
       }
-      return newDate
-    })
+
+      // Reset all schedule-related state
+      setSchedule({})
+      setScheduleExists(false)
+      setShowCreateOptions(true)
+      setLastSavedSchedule({})
+      setLastSavedIsPublic(false)
+      setIsPublic(false)
+      setHasUnsavedChanges(false)
+
+      setDeleteModalOpen(false)
+      toast({
+        title: "Schedule Deleted",
+        description: "The schedule has been successfully deleted.",
+      })
+    } catch (error) {
+      console.error("Error deleting schedule:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete schedule. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const copyFromPreviousMonth = async (isCreating = false) => {
@@ -506,7 +595,26 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
       }
 
       if (data) {
-        setSchedule(data.schedule_data as MonthlySchedule)
+        // Remap the schedule data to the current month's date strings
+        const previousSchedule = data.schedule_data as MonthlySchedule
+        const currentSchedule: MonthlySchedule = {}
+        
+        // Get the current month's days
+        const currentDays = getDaysInMonth().filter((day) => day !== null)
+        
+        // Map previous month's day schedules to current month's dates
+        Object.entries(previousSchedule).forEach(([prevDateStr, daySchedule]) => {
+          const prevDate = new Date(prevDateStr)
+          const dayOfMonth = prevDate.getDate()
+          
+          // Find the corresponding day in the current month
+          const currentDay = currentDays.find(day => day && day.day === dayOfMonth)
+          if (currentDay) {
+            currentSchedule[currentDay.dateStr] = daySchedule
+          }
+        })
+        
+        setSchedule(currentSchedule)
         if (isCreating) {
           setScheduleExists(true)
           setShowCreateOptions(false)
@@ -658,6 +766,16 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
               <Save className="h-4 w-4 mr-2" />
               {saving ? "Saving..." : hasUnsavedChanges ? "Save Changes" : "Save Schedule"}
             </Button>
+            {scheduleExists && (
+              <Button
+                onClick={() => setDeleteModalOpen(true)}
+                variant="destructive"
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 px-2"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -671,13 +789,20 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
             <div className="flex items-center gap-3">
               <CardTitle className="text-xl">
                 {monthNames[currentDate.getMonth()]} {currentYear}
+                {scheduleExists && Object.keys(schedule).length > 0 && (
+                  <span className="text-base font-normal text-slate-600 dark:text-slate-400 ml-2">
+                    ({calculateTotalHours(schedule, currentMonth, currentYear).toFixed(0)}時間)
+                  </span>
+                )}
               </CardTitle>
-              <Badge 
-                variant={isPublic ? "default" : "secondary"}
-                className={isPublic ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" : "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"}
-              >
-                {isPublic ? "Published" : "Draft"}
-              </Badge>
+              {scheduleExists && (
+                <Badge 
+                  variant={isPublic ? "default" : "secondary"}
+                  className={isPublic ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" : "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"}
+                >
+                  {isPublic ? "Published" : "Draft"}
+                </Badge>
+              )}
             </div>
             <Button variant="outline" size="sm" onClick={() => navigateMonth("next")}>
               <ChevronRight className="h-4 w-4" />
@@ -780,16 +905,18 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
                 </CardTitle>
                 <CardDescription>Allow customers to view your schedule with a public link</CardDescription>
               </div>
-              <Badge 
-                variant="secondary" 
-                className={`${
-                  isPublic 
-                    ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" 
-                    : "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
-                }`}
-              >
-                {isPublic ? "Published" : "Draft"}
-              </Badge>
+              {scheduleExists && (
+                <Badge 
+                  variant="secondary" 
+                  className={`${
+                    isPublic 
+                      ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" 
+                      : "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
+                  }`}
+                >
+                  {isPublic ? "Published" : "Draft"}
+                </Badge>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -904,6 +1031,46 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
         url={publicSlug ? `${window.location.origin}/${publicSlug}` : ""}
         businessName="スケジュール"
       />
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Schedule</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the schedule for {monthNames[currentDate.getMonth()]} {currentYear}? 
+              This action cannot be undone and will permanently remove all schedule data for this month.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteModalOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={deleteSchedule}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Schedule
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

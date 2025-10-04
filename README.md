@@ -51,7 +51,6 @@ Run the SQL scripts in your Supabase dashboard in order:
 - **Profile Management**: Business profiles with public sharing
 - **Schedule Management**: Monthly schedule creation and editing
 - **Public Sharing**: Share schedules via public URLs and QR codes
-- **PWA Support**: Installable web app
 - **Responsive Design**: Works on desktop and mobile
 
 ## 🎯 Usage

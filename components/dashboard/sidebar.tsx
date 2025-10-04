@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Home, Calendar, Settings } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useSidebar } from "./sidebar-context"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -15,23 +16,35 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { isCollapsed } = useSidebar()
 
   return (
-    <div className="flex h-full w-64 flex-col bg-sidebar border-r border-sidebar-border">
+    <div className={cn(
+      "flex h-full flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300",
+      isCollapsed ? "w-16" : "w-[206px]"
+    )}>
       {/* Logo */}
-      <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
+      <div className={cn(
+        "flex h-16 items-center border-b border-sidebar-border",
+        isCollapsed ? "justify-center px-0" : "px-6"
+      )}>
         <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
             <Calendar className="w-5 h-5 text-white" />
           </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                スケジュール
-              </span>
+          {!isCollapsed && (
+            <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              スケジュール
+            </span>
+          )}
         </Link>
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-3 py-4">
+      <ScrollArea className={cn(
+        "flex-1 py-4",
+        isCollapsed ? "px-0" : "px-3"
+      )}>
         <nav className="space-y-1">
           {navigation.map((item) => {
             const isActive = pathname === item.href
@@ -41,15 +54,17 @@ export function Sidebar() {
                 asChild
                 variant={isActive ? "secondary" : "ghost"}
                 className={cn(
-                  "w-full justify-start gap-3 h-10",
+                  "w-full h-10",
+                  isCollapsed ? "justify-center px-0" : "justify-start gap-3",
                   isActive
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
+                title={isCollapsed ? item.name : undefined}
               >
                 <Link href={item.href}>
                   <item.icon className="h-4 w-4" />
-                  {item.name}
+                  {!isCollapsed && item.name}
                 </Link>
               </Button>
             )

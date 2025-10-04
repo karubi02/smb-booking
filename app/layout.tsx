@@ -11,12 +11,6 @@ import "./globals.css"
 export const metadata: Metadata = {
   title: "スケジュール - Schedule Management",
   description: "Professional schedule management and booking system",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "スケジュール",
-  },
   formatDetection: {
     telephone: false,
   },
@@ -31,7 +25,7 @@ export const metadata: Metadata = {
     title: "スケジュール - Schedule Management",
     description: "Professional schedule management and booking system",
   },
-    generator: 'v0.app'
+  generator: 'v0.app'
 }
 
 export default function RootLayout({
@@ -43,13 +37,6 @@ export default function RootLayout({
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} antialiased`} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-        <meta name="theme-color" content="#0f172a" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-            <meta name="apple-mobile-web-app-title" content="スケジュール" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-        <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
       </head>
       <body suppressHydrationWarning>
         <Suspense fallback={null}>
