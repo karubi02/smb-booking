@@ -4,7 +4,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Users, Shield, Zap, Star } from "lucide-react"
+import Image from "next/image"
+import { Clock, Users, Shield, Zap, Star, Calendar } from "lucide-react"
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -21,13 +22,11 @@ export default async function HomePage() {
       {/* Navigation */}
       <nav className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-white" />
-            </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  スケジュール
-                </span>
+          <div className="flex items-center space-x-3">
+            <Image src="/icon.png" alt="Schedule logo" width={40} height={40} priority className="object-contain" />
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              スケジュール
+            </span>
           </div>
           <div className="flex items-center space-x-4">
             <Link href="/auth/login">
@@ -82,7 +81,7 @@ export default async function HomePage() {
           <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
             <CardHeader>
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mb-4">
-                <Calendar className="w-6 h-6 text-blue-600" />
+                <Image src="/icon.png" alt="Schedule icon" width={28} height={28} className="rounded-full" />
               </div>
               <CardTitle>Smart Scheduling</CardTitle>
               <CardDescription>
@@ -175,9 +174,7 @@ export default async function HomePage() {
             <div className="container mx-auto px-4 py-8">
               <div className="flex flex-col md:flex-row items-center justify-between">
                 <div className="flex items-center space-x-2 mb-4 md:mb-0">
-                  <div className="w-6 h-6 bg-gradient-to-br from-blue-600 to-indigo-600 rounded flex items-center justify-center">
-                    <Calendar className="w-4 h-4 text-white" />
-                  </div>
+                  <Image src="/icon.png" alt="Schedule icon" width={32} height={32} className="rounded-full" />
                   <span className="font-semibold">スケジュール</span>
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-300">

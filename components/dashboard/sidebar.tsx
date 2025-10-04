@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import Image from "next/image"
 import { Home, Calendar, Settings } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -29,9 +30,7 @@ export function Sidebar() {
         isCollapsed ? "justify-center px-0" : "px-6"
       )}>
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-            <Calendar className="w-5 h-5 text-white" />
-          </div>
+          <Image src="/icon.png" alt="Schedule logo" width={36} height={36} priority className="object-contain" />
           {!isCollapsed && (
             <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               スケジュール
@@ -62,7 +61,7 @@ export function Sidebar() {
                 )}
                 title={isCollapsed ? item.name : undefined}
               >
-                <Link href={item.href}>
+                <Link href={item.href} className="flex items-center gap-3">
                   <item.icon className="h-4 w-4" />
                   {!isCollapsed && item.name}
                 </Link>

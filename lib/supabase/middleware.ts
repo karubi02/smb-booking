@@ -1,25 +1,50 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
-export async function updateSession(request: NextRequest) {
-  // Skip Supabase calls for static files and API routes
-  const pathname = request.nextUrl.pathname
-  if (
-    pathname.startsWith('/_next/') ||
-    pathname.startsWith('/api/') ||
+const PUBLIC_PATH_PREFIXES = ["/auth", "/public/schedule"]
+
+function isStaticAsset(pathname: string) {
+  return (
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/api/") ||
     pathname.match(/\.(png|jpg|jpeg|gif|webp|svg|ico|css|js|woff|woff2|ttf|eot)$/)
-  ) {
-    return NextResponse.next({
-      request,
-    })
+  )
+}
+
+function requiresAuthentication(pathname: string) {
+  if (pathname === "/") return false
+  if (PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return false
+
+  // Public slug pages are single path segments that are not dashboard/auth/api
+  const segments = pathname.split("/").filter(Boolean)
+  const isPublicSlug =
+    segments.length === 1 &&
+    !pathname.startsWith("/dashboard") &&
+    !pathname.startsWith("/api")
+
+  if (isPublicSlug) return false
+
+  // Dashboard (and anything nested) requires auth
+  if (pathname.startsWith("/dashboard")) {
+    return true
   }
 
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
+  return false
+}
 
-  // With Fluid compute, don't put this client in a global environment
-  // variable. Always create a new one on each request.
+export async function updateSession(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  if (isStaticAsset(pathname)) {
+    return NextResponse.next({ request })
+  }
+
+  let supabaseResponse = NextResponse.next({ request })
+
+  if (!requiresAuthentication(pathname)) {
+    return supabaseResponse
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -30,58 +55,24 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options),
+          )
         },
       },
     },
   )
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
-
-  // IMPORTANT: If you remove getUser() and you use server-side rendering
-  // with the Supabase client, your users may be randomly logged out.
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Check if this is a public slug route (single segment path that's not auth or dashboard)
-  const pathSegments = request.nextUrl.pathname.split('/').filter(Boolean)
-  const isPublicSlug = pathSegments.length === 1 && 
-    !request.nextUrl.pathname.startsWith("/auth") &&
-    !request.nextUrl.pathname.startsWith("/dashboard") &&
-    !request.nextUrl.pathname.startsWith("/api") &&
-    !request.nextUrl.pathname.startsWith("/_next")
-
-  if (
-    request.nextUrl.pathname !== "/" &&
-    !user &&
-    !request.nextUrl.pathname.startsWith("/auth") &&
-    !request.nextUrl.pathname.startsWith("/public/schedule") &&
-    !isPublicSlug
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  if (!user) {
     const url = request.nextUrl.clone()
     url.pathname = "/auth/login"
     return NextResponse.redirect(url)
   }
-
-  // IMPORTANT: You *must* return the supabaseResponse object as it is.
-  // If you're creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
 
   return supabaseResponse
 }

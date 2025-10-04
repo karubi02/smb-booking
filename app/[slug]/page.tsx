@@ -142,7 +142,11 @@ export default async function PublicSchedulePage({
     const currentDate = new Date()
     const resolvedParams = await params
     const resolvedSearchParams = await searchParams
-    
+
+    if (!resolvedParams.slug || resolvedParams.slug.includes('.')) {
+      notFound()
+    }
+
     const targetMonth = resolvedSearchParams.month ? Number.parseInt(resolvedSearchParams.month) : currentDate.getMonth() + 1
     const targetYear = resolvedSearchParams.year ? Number.parseInt(resolvedSearchParams.year) : currentDate.getFullYear()
     
@@ -168,7 +172,7 @@ export default async function PublicSchedulePage({
       .from("profiles")
       .select("id, display_name, business_name, logo_url, banner_url")
       .eq("public_slug", resolvedParams.slug)
-      .single()
+      .maybeSingle()
 
     if (profileError || !profile) {
       notFound()
