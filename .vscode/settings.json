@@ -1,0 +1,6 @@
+{
+  "task.autoDetect": "on",
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.defaultProfile.windows": "powershell"
+}

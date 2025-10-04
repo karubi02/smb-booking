@@ -61,15 +61,18 @@ export default async function PublicSchedulePage({
   params,
   searchParams,
 }: {
-  params: { slug: string }
-  searchParams: { month?: string; year?: string }
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ month?: string; year?: string }>
 }) {
   try {
     const currentDate = new Date()
-    const targetMonth = searchParams.month ? Number.parseInt(searchParams.month) : currentDate.getMonth() + 1
-    const targetYear = searchParams.year ? Number.parseInt(searchParams.year) : currentDate.getFullYear()
+    const resolvedParams = await params
+    const resolvedSearchParams = await searchParams
+    
+    const targetMonth = resolvedSearchParams.month ? Number.parseInt(resolvedSearchParams.month) : currentDate.getMonth() + 1
+    const targetYear = resolvedSearchParams.year ? Number.parseInt(resolvedSearchParams.year) : currentDate.getFullYear()
 
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -85,7 +88,7 @@ export default async function PublicSchedulePage({
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("id, display_name")
-      .eq("public_slug", params.slug)
+      .eq("public_slug", resolvedParams.slug)
       .single()
 
     console.log("[v0] Profile data fetched:", profile)
@@ -194,7 +197,7 @@ export default async function PublicSchedulePage({
           </div>
 
           <PublicScheduleNavigation
-            slug={params.slug}
+            slug={resolvedParams.slug}
             currentMonth={targetMonth}
             currentYear={targetYear}
             hasPrevious={!!prevSchedule}
