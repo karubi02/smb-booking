@@ -293,28 +293,28 @@ export default async function PublicSchedulePage({
 
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
           {/* Banner Section */}
-          <div className="relative mb-[26px]">
+          <div className="relative mb-4 sm:mb-[26px]">
             {/* Banner Background */}
             {profile.banner_url ? (
               <div 
-                className="absolute inset-x-0 top-0 h-[200px] rounded-lg bg-cover bg-center bg-no-repeat"
+                className="absolute inset-x-0 top-0 h-[120px] sm:h-[200px] rounded-lg bg-cover bg-center bg-no-repeat"
                 style={{ backgroundImage: `url(${profile.banner_url})` }}
               ></div>
             ) : (
-              <div className="absolute inset-x-0 top-0 h-[200px] bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg"></div>
+              <div className="absolute inset-x-0 top-0 h-[120px] sm:h-[200px] bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg"></div>
             )}
             
             {/* Dark overlay for better text readability */}
-            <div className="absolute inset-x-0 top-0 h-[200px] bg-black/20 rounded-lg"></div>
+            <div className="absolute inset-x-0 top-0 h-[120px] sm:h-[200px] bg-black/20 rounded-lg"></div>
             
             {/* Content over Banner */}
-            <div className="relative z-10 h-[200px] flex flex-col items-center justify-center text-center">
+            <div className="relative z-10 h-[120px] sm:h-[200px] flex flex-col items-center justify-center text-center">
               {/* Business Logo */}
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-2 sm:mb-4">
                 {profile.logo_url ? (
-                  <div className="w-[75px] h-[75px] rounded-full border-2 border-white shadow-lg overflow-hidden">
+                  <div className="w-[50px] h-[50px] sm:w-[75px] sm:h-[75px] rounded-full border-2 border-white shadow-lg overflow-hidden">
                     <Image 
                       src={profile.logo_url} 
                       alt={`${businessName} logo`}
@@ -325,9 +325,9 @@ export default async function PublicSchedulePage({
                     />
                   </div>
                 ) : (
-                  <div className="w-[75px] h-[75px] rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-[50px] h-[50px] sm:w-[75px] sm:h-[75px] rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
@@ -335,8 +335,8 @@ export default async function PublicSchedulePage({
                 )}
               </div>
               
-              <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">{businessName}</h1>
-              <p className="text-white/90 drop-shadow">
+              <h1 className="text-xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">{businessName}</h1>
+              <p className="text-sm sm:text-base text-white/90 drop-shadow">
                 {monthNames[month]} {year} スケジュール
               </p>
             </div>
@@ -345,9 +345,9 @@ export default async function PublicSchedulePage({
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
             <div className="grid grid-cols-7 bg-teal-600">
               {dayNames.map((dayName, index) => (
-                <div key={index} className="p-4 text-center">
-                  <div className="text-white font-semibold text-lg">{dayName}</div>
-                  <div className="text-teal-100 text-sm mt-1">{dayNamesEnglish[index]}</div>
+                <div key={index} className="p-1 sm:p-4 text-center">
+                  <div className="text-white font-semibold text-xs sm:text-lg">{dayName}</div>
+                  <div className="text-teal-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{dayNamesEnglish[index]}</div>
                 </div>
               ))}
             </div>
@@ -356,7 +356,7 @@ export default async function PublicSchedulePage({
               <div key={weekIndex} className="grid grid-cols-7 border-b border-gray-200 last:border-b-0">
                 {week.map((day, dayIndex) => {
                   if (!day) {
-                    return <div key={dayIndex} className="h-32 border-r border-gray-200 last:border-r-0" />
+                    return <div key={dayIndex} className="h-20 sm:h-32 border-r border-gray-200 last:border-r-0" />
                   }
 
                   const daySchedule = day.schedule
@@ -365,14 +365,14 @@ export default async function PublicSchedulePage({
                   return (
                     <div
                       key={day.dateStr}
-                      className={`h-32 border-r border-gray-200 last:border-r-0 p-2 flex flex-col ${
+                      className={`h-20 sm:h-32 border-r border-gray-200 last:border-r-0 p-1 sm:p-2 flex flex-col ${
                         daySchedule.closed 
                           ? "bg-red-100 dark:bg-red-700" 
                           : "bg-green-50 dark:bg-green-950/50"
-                      } ${isToday ? "border-b-4 border-b-green-600" : ""}`}
+                      } ${isToday ? "border-b-2 sm:border-b-4 border-b-green-600" : ""}`}
                     >
-                      <div className="text-right mb-2">
-                        <span className={`text-lg font-semibold ${
+                      <div className="text-right mb-1 sm:mb-2">
+                        <span className={`text-sm sm:text-lg font-semibold ${
                           daySchedule.closed 
                             ? "text-black dark:text-white" 
                             : isToday 
@@ -384,27 +384,27 @@ export default async function PublicSchedulePage({
                       </div>
 
                       {daySchedule.closed ? (
-                        <div className="flex-1 flex items-start justify-center pt-1">
-                          <div className="text-black dark:text-white text-sm">休業</div>
+                        <div className="flex-1 flex items-start justify-center pt-0.5 sm:pt-1">
+                          <div className="text-black dark:text-white text-xs sm:text-sm">休業</div>
                         </div>
                       ) : (
-                        <div className="flex-1 flex flex-col items-end justify-start text-xs space-y-1 pt-1">
+                        <div className="flex-1 flex flex-col items-end justify-start text-xs sm:text-xs space-y-0.5 sm:space-y-1 pt-0.5 sm:pt-1">
                           {(() => {
                             const effectiveHours = calculateEffectiveHours(daySchedule)
                             if (effectiveHours.periods.length === 1) {
                               // Single period - show simple format
                               const period = effectiveHours.periods[0]
                               return (
-                                <div className="text-gray-700 font-medium">
+                                <div className="text-gray-700 font-medium text-xs sm:text-xs leading-tight">
                                   {formatTime(period.start)} - {formatTime(period.end)}
                                 </div>
                               )
                             } else if (effectiveHours.periods.length > 1) {
                               // Multiple periods - show each period
                               return (
-                                <div className="space-y-0.5">
+                                <div className="space-y-0 sm:space-y-0.5">
                                   {effectiveHours.periods.map((period, index) => (
-                                    <div key={index} className="text-gray-700 font-medium">
+                                    <div key={index} className="text-gray-700 font-medium text-xs sm:text-xs leading-tight">
                                       {formatTime(period.start)} - {formatTime(period.end)}
                                     </div>
                                   ))}
@@ -413,7 +413,7 @@ export default async function PublicSchedulePage({
                             } else {
                               // Fallback - should not happen with updated logic
                               return (
-                                <div className="text-gray-700 font-medium">
+                                <div className="text-gray-700 font-medium text-xs sm:text-xs leading-tight">
                                   {formatTime(daySchedule.open)} - {formatTime(daySchedule.close)}
                                 </div>
                               )
@@ -429,7 +429,7 @@ export default async function PublicSchedulePage({
           </div>
 
           {/* Navigation and Last Updated Row */}
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <PublicScheduleNavigation
               slug={resolvedParams.slug}
               currentMonth={targetMonth}
@@ -441,7 +441,7 @@ export default async function PublicSchedulePage({
               nextMonth={nextMonth}
               nextYear={nextYear}
             >
-              <p className="text-sm text-gray-500">スケジュール最終更新: {new Date().toLocaleDateString()}</p>
+              <p className="text-xs sm:text-sm text-gray-500 text-center">スケジュール最終更新: {new Date().toLocaleDateString()}</p>
             </PublicScheduleNavigation>
           </div>
         </div>
