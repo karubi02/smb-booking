@@ -49,11 +49,20 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Check if this is a public slug route (single segment path that's not auth or dashboard)
+  const pathSegments = request.nextUrl.pathname.split('/').filter(Boolean)
+  const isPublicSlug = pathSegments.length === 1 && 
+    !request.nextUrl.pathname.startsWith("/auth") &&
+    !request.nextUrl.pathname.startsWith("/dashboard") &&
+    !request.nextUrl.pathname.startsWith("/api") &&
+    !request.nextUrl.pathname.startsWith("/_next")
+
   if (
     request.nextUrl.pathname !== "/" &&
     !user &&
     !request.nextUrl.pathname.startsWith("/auth") &&
-    !request.nextUrl.pathname.startsWith("/public/schedule")
+    !request.nextUrl.pathname.startsWith("/public/schedule") &&
+    !isPublicSlug
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
