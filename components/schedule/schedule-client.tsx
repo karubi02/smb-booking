@@ -27,6 +27,7 @@ import {
   Trash2,
   Plus,
   X,
+  Download,
 } from "lucide-react"
 import { QRCodeModal } from "./qr-code-modal" // Added QR code modal import
 import { calculateTotalHours } from "@/lib/schedule-utils"
@@ -219,9 +220,11 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
   const [showCreateOptions, setShowCreateOptions] = useState(false)
   const [lastSavedSchedule, setLastSavedSchedule] = useState<MonthlySchedule>({})
   const [lastSavedIsPublic, setLastSavedIsPublic] = useState(false)
-  const [qrModalOpen, setQrModalOpen] = useState(false) // Added QR modal state
+  const [qrModalOpen, setQrModalOpen] = useState(false)
+  const [downloadingImage, setDownloadingImage] = useState(false) // Added QR modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false) // Added delete modal state
   const [isDeleting, setIsDeleting] = useState(false) // Added deleting state
+  const [businessName, setBusinessName] = useState<string>("Business") // Added business name state
   const { toast } = useToast()
 
   const supabase = createBrowserClient(
@@ -231,6 +234,28 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
 
   const currentMonth = currentDate.getMonth() + 1
   const currentYear = currentDate.getFullYear()
+
+  // Fetch business name from profile
+  useEffect(() => {
+    const fetchBusinessName = async () => {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("business_name, display_name")
+          .eq("id", userId)
+          .single()
+        
+        if (data) {
+          const name = data.business_name || data.display_name || "Business"
+          setBusinessName(name)
+        }
+      } catch (error) {
+        console.error("Error fetching business name:", error)
+      }
+    }
+    
+    fetchBusinessName()
+  }, [userId, supabase])
 
   const getDaysInMonth = () => {
     const year = currentDate.getFullYear()
@@ -679,6 +704,59 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
     window.open(publicUrl, "_blank")
   }
 
+  const downloadScheduleImage = async () => {
+    if (!publicSlug) return
+
+    setDownloadingImage(true)
+    try {
+      const response = await fetch('/api/schedule-screenshot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          slug: publicSlug,
+          month: currentMonth,
+          year: currentYear,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || 'Failed to generate schedule screenshot')
+      }
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+
+      const safeBusinessName = businessName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-')
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+      const monthName = monthNames[currentMonth - 1]
+
+      link.download = `${safeBusinessName}-${monthName}-${currentYear}-schedule.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: "Schedule Downloaded",
+        description: "Schedule image has been saved to your downloads folder.",
+      })
+    } catch (error) {
+      console.error('Error downloading schedule image:', error)
+      toast({
+        title: "Download Failed",
+        description: "Failed to download schedule image. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setDownloadingImage(false)
+    }
+  }
+
   const createNewSchedule = () => {
     setShowCreateOptions(true)
   }
@@ -1006,6 +1084,9 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
                   </Button>
                   <Button variant="outline" onClick={() => setQrModalOpen(true)}>
                     <QrCode className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" onClick={downloadScheduleImage} disabled={downloadingImage}>
+                    <Download className="h-4 w-4" />
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">

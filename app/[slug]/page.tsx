@@ -285,7 +285,7 @@ export default async function PublicSchedulePage({
     }
 
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900" data-public-schedule-root="true">
         <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
             {/* Banner Section */}
             <div className="relative mb-6 sm:mb-10">

@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/server"
 import { SettingsForm } from "@/components/settings/settings-form"
+import { PasswordChangeForm } from "@/components/settings/password-change-form"
 import { Mail, Phone, Calendar, Shield, User } from "lucide-react"
 
 export default async function SettingsPage() {
@@ -46,9 +47,21 @@ export default async function SettingsPage() {
                   phone: profile?.phone || "",
                   logo_url: profile?.logo_url || "",
                   banner_url: profile?.banner_url || "",
+                  public_slug: profile?.public_slug || "",
                 }}
                 userId={user?.id || ""}
               />
+            </CardContent>
+          </Card>
+
+          {/* Password Change Card */}
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">Change Password</CardTitle>
+              <CardDescription>Update your account password for security</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PasswordChangeForm />
             </CardContent>
           </Card>
 
