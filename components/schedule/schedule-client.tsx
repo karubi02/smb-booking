@@ -722,24 +722,38 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
       })
 
       if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(errorText || 'Failed to generate schedule screenshot')
+        let errorMessage = 'Failed to generate schedule screenshot'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData?.error || errorMessage
+        } catch {
+          const fallbackMessage = await response.text()
+          if (fallbackMessage) {
+            errorMessage = fallbackMessage
+          }
+        }
+        throw new Error(errorMessage)
       }
 
       const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
+      const objectUrl = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = url
+      link.href = objectUrl
 
-      const safeBusinessName = businessName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-')
+      const safeBusinessName = (businessName || 'schedule')
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .trim()
+        .replace(/\s+/g, '-') || 'schedule'
       const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
       const monthName = monthNames[currentMonth - 1]
 
       link.download = `${safeBusinessName}-${monthName}-${currentYear}-schedule.png`
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      if (link.isConnected && link.parentNode) {
+        link.parentNode.removeChild(link)
+      }
+      URL.revokeObjectURL(objectUrl)
 
       toast({
         title: "Schedule Downloaded",
@@ -747,9 +761,10 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
       })
     } catch (error) {
       console.error('Error downloading schedule image:', error)
+      const message = error instanceof Error ? error.message : 'Failed to download schedule image. Please try again.'
       toast({
         title: "Download Failed",
-        description: "Failed to download schedule image. Please try again.",
+        description: message,
         variant: "destructive",
       })
     } finally {

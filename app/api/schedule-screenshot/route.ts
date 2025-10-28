@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server"
-import type { Browser } from "puppeteer"
+import chromium from "@sparticuz/chromium-min"
+import type { Browser } from "puppeteer-core"
+import puppeteer from "puppeteer-core"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -44,20 +46,33 @@ export async function POST(request: NextRequest) {
       targetUrl.searchParams.set("year", String(year))
     }
 
-    const { default: puppeteer } = await import("puppeteer")
+    chromium.setHeadlessMode = true
+    chromium.setGraphicsMode = false
+
+    const executablePath =
+      (await chromium.executablePath(process.env.CHROME_EXECUTABLE_PATH)) ||
+      process.env.CHROME_EXECUTABLE_PATH ||
+      undefined
+
+    if (!executablePath) {
+      throw new Error(
+        "Chromium executable path could not be resolved. Provide CHROME_EXECUTABLE_PATH or include the chromium binary.",
+      )
+    }
 
     browser = await puppeteer.launch({
-      headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      args: chromium.args,
+      defaultViewport: {
+        width: 1280,
+        height: 900,
+        deviceScaleFactor: 2,
+      },
+      executablePath,
+      headless: chromium.headless,
+      ignoreHTTPSErrors: true,
     })
 
     const page = await browser.newPage()
-
-    await page.setViewport({
-      width: 1280,
-      height: 900,
-      deviceScaleFactor: 2,
-    })
 
     await page.emulateMediaFeatures([
       { name: "prefers-color-scheme", value: "light" },

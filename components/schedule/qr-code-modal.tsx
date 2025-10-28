@@ -32,7 +32,9 @@ export function QRCodeModal({ isOpen, onClose, url, businessName = "Business" }:
       link.download = `${businessName.toLowerCase().replace(/\s+/g, "-")}-schedule-qr.png`
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
+      if (link.isConnected && link.parentNode) {
+        link.parentNode.removeChild(link)
+      }
       window.URL.revokeObjectURL(downloadUrl)
 
       toast({
