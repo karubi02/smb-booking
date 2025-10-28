@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback, memo } from "react"
+import { useState, useEffect, useCallback, memo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -57,21 +57,21 @@ const defaultDaySchedule: DaySchedule = {
 }
 
 const monthNames = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "1月",
+  "2月",
+  "3月",
+  "4月",
+  "5月",
+  "6月",
+  "7月",
+  "8月",
+  "9月",
+  "10月",
+  "11月",
+  "12月",
 ]
 
-const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+const dayNames = ["日", "月", "火", "水", "木", "金", "土"]
 
 // Helper function to add minutes to a time string
 const addMinutes = (timeStr: string, minutes: number): string => {
@@ -116,14 +116,14 @@ const DayCard = memo(({
           {!daySchedule.closed && (
             <div className="space-y-2">
               <div>
-                <Label className="text-xs">Open</Label>
+                <Label className="text-xs">開店時間</Label>
                 <TimePicker
                   value={daySchedule.open}
                   onChange={(value) => onUpdate(day.dateStr, "open", value)}
                 />
               </div>
               <div>
-                <Label className="text-xs">Close</Label>
+                <Label className="text-xs">閉店時間</Label>
                 <TimePicker
                   value={daySchedule.close}
                   onChange={(value) => onUpdate(day.dateStr, "close", value)}
@@ -132,7 +132,7 @@ const DayCard = memo(({
 
               <div className="border-t pt-2 space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs">Breaks</Label>
+                  <Label className="text-xs">休憩</Label>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -146,7 +146,7 @@ const DayCard = memo(({
                 {(daySchedule.breaks || []).map((breakItem, index) => (
                   <div key={breakItem.id} className="space-y-1 p-2 border rounded bg-slate-50 dark:bg-slate-800">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs">Break {index + 1}</Label>
+                      <Label className="text-xs">休憩 {index + 1}</Label>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -158,14 +158,14 @@ const DayCard = memo(({
                     </div>
                     <div className="space-y-2">
                       <div>
-                        <Label className="text-xs">Start</Label>
+                        <Label className="text-xs">開始</Label>
                         <TimePicker
                           value={breakItem.start}
                           onChange={(value) => onUpdateBreak(day.dateStr, breakItem.id, "start", value)}
                         />
                       </div>
                       <div>
-                        <Label className="text-xs">End</Label>
+                        <Label className="text-xs">終了</Label>
                         <TimePicker
                           value={breakItem.end}
                           onChange={(value) => onUpdateBreak(day.dateStr, breakItem.id, "end", value)}
@@ -178,7 +178,7 @@ const DayCard = memo(({
             </div>
           )}
 
-          {daySchedule.closed && <div className="text-center text-xs text-muted-foreground">Closed</div>}
+          {daySchedule.closed && <div className="text-center text-xs text-muted-foreground">定休日</div>}
         </div>
       </CardContent>
     </Card>
@@ -224,7 +224,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
   const [downloadingImage, setDownloadingImage] = useState(false) // Added QR modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false) // Added delete modal state
   const [isDeleting, setIsDeleting] = useState(false) // Added deleting state
-  const [businessName, setBusinessName] = useState<string>("Business") // Added business name state
+  const [businessName, setBusinessName] = useState<string>("ビジネス") // Added business name state
   const { toast } = useToast()
 
   const supabase = createBrowserClient(
@@ -246,7 +246,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
           .single()
         
         if (data) {
-          const name = data.business_name || data.display_name || "Business"
+          const name = data.business_name || data.display_name || "ビジネス"
           setBusinessName(name)
         }
       } catch (error) {
@@ -402,8 +402,8 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
         if (profileError) {
           console.error("Error updating profile slug:", profileError)
           toast({
-            title: "Error",
-            description: "Failed to generate public link. Please try again.",
+            title: "エラー",
+            description: "公開リンクの生成に失敗しました。もう一度お試しください。",
             variant: "destructive",
           })
           return
@@ -433,8 +433,8 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
       if (error) {
         console.error("Error saving schedule:", error)
         toast({
-          title: "Error",
-          description: "Failed to save schedule. Please try again.",
+          title: "エラー",
+          description: "スケジュールの保存に失敗しました。もう一度お試しください。",
           variant: "destructive",
         })
         return
@@ -446,14 +446,14 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
       setHasUnsavedChanges(false)
 
       toast({
-        title: "Success",
-        description: "Schedule saved successfully!",
+        title: "保存完了",
+        description: "スケジュールを保存しました。",
       })
     } catch (error) {
       console.error("Error saving schedule:", error)
       toast({
-        title: "Error",
-        description: "Failed to save schedule. Please try again.",
+        title: "エラー",
+        description: "スケジュールの保存に失敗しました。もう一度お試しください。",
         variant: "destructive",
       })
     } finally {
@@ -559,8 +559,8 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
       if (error) {
         console.error("Error deleting schedule:", error)
         toast({
-          title: "Error",
-          description: "Failed to delete schedule. Please try again.",
+          title: "エラー",
+          description: "スケジュールの削除に失敗しました。もう一度お試しください。",
           variant: "destructive",
         })
         return
@@ -577,14 +577,14 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
 
       setDeleteModalOpen(false)
       toast({
-        title: "Schedule Deleted",
-        description: "The schedule has been successfully deleted.",
+        title: "スケジュールを削除しました",
+        description: "選択したスケジュールを削除しました。",
       })
     } catch (error) {
       console.error("Error deleting schedule:", error)
       toast({
-        title: "Error",
-        description: "Failed to delete schedule. Please try again.",
+        title: "エラー",
+        description: "スケジュールの削除に失敗しました。もう一度お試しください。",
         variant: "destructive",
       })
     } finally {
@@ -609,8 +609,8 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
 
       if (error) {
         toast({
-          title: "No Previous Schedule",
-          description: "No schedule found for the previous month.",
+          title: "前月のスケジュールが見つかりません",
+          description: "先月のスケジュールデータは存在しませんでした。",
           variant: "destructive",
         })
         if (isCreating) {
@@ -645,8 +645,8 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
           setShowCreateOptions(false)
         }
         toast({
-          title: "Success",
-          description: "Copied schedule from previous month!",
+          title: "コピー完了",
+          description: "先月のスケジュールをコピーしました。",
         })
       }
     } catch (error) {
@@ -669,8 +669,8 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
 
     setSchedule(newSchedule)
     toast({
-      title: "Applied to All Days",
-      description: "Default hours applied to all days in the month.",
+      title: "すべての日に適用しました",
+      description: "月内の全日程にデフォルトの営業時間を設定しました。",
     })
   }
 
@@ -682,14 +682,14 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
       const publicUrl = `${window.location.origin}/${publicSlug}`
       await navigator.clipboard.writeText(publicUrl)
       toast({
-        title: "Link Copied",
-        description: "Public schedule link copied to clipboard!",
+        title: "リンクをコピーしました",
+        description: "公開スケジュールのURLをクリップボードにコピーしました。",
       })
     } catch (error) {
       console.error("Error copying link:", error)
       toast({
-        title: "Error",
-        description: "Failed to copy link. Please try again.",
+        title: "エラー",
+        description: "リンクのコピーに失敗しました。もう一度お試しください。",
         variant: "destructive",
       })
     } finally {
@@ -722,7 +722,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
       })
 
       if (!response.ok) {
-        let errorMessage = 'Failed to generate schedule screenshot'
+        let errorMessage = 'スケジュール画像の生成に失敗しました。'
         try {
           const errorData = await response.json()
           errorMessage = errorData?.error || errorMessage
@@ -744,7 +744,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
         .replace(/[^a-zA-Z0-9\s]/g, '')
         .trim()
         .replace(/\s+/g, '-') || 'schedule'
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+      const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
       const monthName = monthNames[currentMonth - 1]
 
       link.download = `${safeBusinessName}-${monthName}-${currentYear}-schedule.png`
@@ -756,14 +756,14 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
       URL.revokeObjectURL(objectUrl)
 
       toast({
-        title: "Schedule Downloaded",
-        description: "Schedule image has been saved to your downloads folder.",
+        title: "スケジュール画像を保存しました",
+        description: "ダウンロードフォルダにスケジュール画像を保存しました。",
       })
     } catch (error) {
       console.error('Error downloading schedule image:', error)
-      const message = error instanceof Error ? error.message : 'Failed to download schedule image. Please try again.'
+      const message = error instanceof Error ? error.message : 'スケジュール画像のダウンロードに失敗しました。もう一度お試しください。'
       toast({
-        title: "Download Failed",
+        title: "ダウンロードに失敗しました",
         description: message,
         variant: "destructive",
       })
@@ -792,15 +792,15 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
     setLastSavedSchedule({})
     setLastSavedIsPublic(false)
     toast({
-      title: "Schedule Created",
-      description: "New schedule created with default hours.",
+      title: "スケジュールを作成しました",
+      description: "デフォルトの営業時間で新しいスケジュールを準備しました。",
     })
   }
 
   const getSaveStatus = () => {
     if (!scheduleExists) {
       return {
-        text: "Never saved",
+        text: "まだ保存されていません",
         icon: AlertCircle,
         variant: "secondary" as const,
         color: "text-orange-600",
@@ -808,14 +808,14 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
     }
     if (hasUnsavedChanges) {
       return {
-        text: "Unsaved changes",
+        text: "未保存の変更があります",
         icon: AlertCircle,
         variant: "secondary" as const,
         color: "text-orange-600",
       }
     }
     return {
-      text: "All changes saved",
+      text: "すべて保存済み",
       icon: CheckCircle2,
       variant: "outline" as const,
       color: "text-blue-600",
@@ -831,10 +831,10 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-            Schedule
+            スケジュール管理
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-300 mt-2">
-            Set individual opening hours for each day
+            日ごとの営業時間を設定しましょう。
           </p>
         </div>
         {scheduleExists && (
@@ -845,10 +845,10 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
             </div>
             <Button variant="outline" onClick={applyToAllDays}>
               <Copy className="h-4 w-4 mr-2" />
-              Apply Default to All
+              すべての日にデフォルトを適用
             </Button>
             <Button variant="outline" onClick={() => copyFromPreviousMonth(false)}>
-              Copy Previous Month
+              先月のスケジュールをコピー
             </Button>
             <Button
               onClick={saveSchedule}
@@ -857,7 +857,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
               className={hasUnsavedChanges ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700" : ""}
             >
               <Save className="h-4 w-4 mr-2" />
-              {saving ? "Saving..." : hasUnsavedChanges ? "Save Changes" : "Save Schedule"}
+              {saving ? "保存中..." : hasUnsavedChanges ? "変更を保存" : "スケジュールを保存"}
             </Button>
             {scheduleExists && (
               <Button
@@ -893,7 +893,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
                   variant={isPublic ? "default" : "secondary"}
                   className={isPublic ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" : "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"}
                 >
-                  {isPublic ? "Published" : "Draft"}
+                  {isPublic ? "公開中" : "下書き"}
                 </Badge>
               )}
             </div>
@@ -908,7 +908,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
         <Card className="border-0 shadow-lg bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-center">
-              <div className="text-slate-600 dark:text-slate-400">Loading schedule...</div>
+              <div className="text-slate-600 dark:text-slate-400">スケジュールを読み込み中...</div>
             </div>
           </CardContent>
         </Card>
@@ -917,24 +917,24 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
           <CardContent className="p-8">
             <div className="text-center space-y-4">
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold">No Schedule Found</h3>
+                <h3 className="text-lg font-semibold">スケジュールが見つかりません</h3>
                 <p className="text-slate-600 dark:text-slate-400">
-                  No schedule exists for {monthNames[currentDate.getMonth()]} {currentYear}
+                  {currentYear}年{monthNames[currentDate.getMonth()]}のスケジュールはまだ作成されていません。
                 </p>
               </div>
 
               {!showCreateOptions ? (
                 <Button onClick={createNewSchedule} size="lg" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
-                  Create Schedule
+                  スケジュールを作成
                 </Button>
               ) : (
                 <div className="space-y-4">
-                  <p className="text-sm text-slate-600 dark:text-slate-400">How would you like to create your schedule?</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">スケジュールの作成方法を選択してください。</p>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <Button onClick={() => copyFromPreviousMonth(true)} variant="outline">
-                      Copy from Previous Month
+                      先月のスケジュールをコピー
                     </Button>
-                    <Button onClick={createFromDefaults} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Start with Default Hours</Button>
+                    <Button onClick={createFromDefaults} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">デフォルトの営業時間で作成</Button>
                   </div>
                   <Button
                     variant="ghost"
@@ -942,7 +942,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
                     onClick={() => setShowCreateOptions(false)}
                     className="text-slate-600 dark:text-slate-400"
                   >
-                    Cancel
+                    キャンセル
                   </Button>
                 </div>
               )}
@@ -994,9 +994,9 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
               <div>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Share2 className="h-5 w-5" />
-                  Public Sharing
+                  公開設定
                 </CardTitle>
-                <CardDescription>Allow customers to view your schedule with a public link</CardDescription>
+                <CardDescription>公開リンクを共有すると、お客様がスケジュールを閲覧できます</CardDescription>
               </div>
               {scheduleExists && (
                 <Badge 
@@ -1007,7 +1007,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
                       : "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
                   }`}
                 >
-                  {isPublic ? "Published" : "Draft"}
+                  {isPublic ? "公開中" : "下書き"}
                 </Badge>
               )}
             </div>
@@ -1016,7 +1016,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {isPublic ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                <Label htmlFor="public-toggle">Make schedule public</Label>
+                <Label htmlFor="public-toggle">スケジュールを公開する</Label>
               </div>
               <Switch id="public-toggle" checked={isPublic} onCheckedChange={async (checked) => {
                 setIsPublic(checked)
@@ -1036,8 +1036,8 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
                     if (profileError) {
                       console.error("Error updating profile slug:", profileError)
                       toast({
-                        title: "Error",
-                        description: "Failed to generate public link. Please try again.",
+                        title: "エラー",
+                        description: "公開リンクの生成に失敗しました。もう一度お試しください。",
                         variant: "destructive",
                       })
                       return
@@ -1063,8 +1063,8 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
                   if (error) {
                     console.error("Error saving schedule:", error)
                     toast({
-                      title: "Error",
-                      description: "Failed to save public status. Please try again.",
+                      title: "エラー",
+                      description: "公開設定の保存に失敗しました。もう一度お試しください。",
                       variant: "destructive",
                     })
                     return
@@ -1072,14 +1072,14 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
 
                   setHasUnsavedChanges(false)
                   toast({
-                    title: "Schedule updated",
-                    description: checked ? "Schedule is now public" : "Schedule is now private",
+                    title: "スケジュールを更新しました",
+                    description: checked ? "スケジュールを公開しました。" : "スケジュールを非公開にしました。",
                   })
                 } catch (error) {
                   console.error("Error in auto-save:", error)
                   toast({
-                    title: "Error",
-                    description: "Failed to update public status. Please try again.",
+                    title: "エラー",
+                    description: "公開設定の更新に失敗しました。もう一度お試しください。",
                     variant: "destructive",
                   })
                 }
@@ -1088,7 +1088,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
 
             {isPublic && publicSlug && (
               <div className="space-y-2">
-                <Label>Public Link</Label>
+                <Label>公開リンク</Label>
                 <div className="flex gap-2">
                   <Input value={`${window.location.origin}/${publicSlug}`} readOnly className="font-mono text-sm" />
                   <Button variant="outline" onClick={copyPublicLink} disabled={copyingLink}>
@@ -1105,7 +1105,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Share this link with customers to let them view your schedule
+                  このリンクを共有すると、お客様がスケジュールを確認できます。
                 </p>
               </div>
             )}
@@ -1113,7 +1113,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
             {isPublic && !publicSlug && (
               <div className="p-3 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">
-                  Save your schedule to generate a public link that you can share with customers.
+                  スケジュールを保存すると、お客様と共有できる公開リンクが作成されます。
                 </p>
               </div>
             )}
@@ -1125,17 +1125,16 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
         isOpen={qrModalOpen}
         onClose={() => setQrModalOpen(false)}
         url={publicSlug ? `${window.location.origin}/${publicSlug}` : ""}
-        businessName="スケジュール"
+        businessName={businessName}
       />
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Schedule</DialogTitle>
+            <DialogTitle>スケジュールを削除</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the schedule for {monthNames[currentDate.getMonth()]} {currentYear}? 
-              This action cannot be undone and will permanently remove all schedule data for this month.
+              {currentYear}年{monthNames[currentDate.getMonth()]}のスケジュールを削除しますか？この操作は取り消せず、該当月のデータが完全に削除されます。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1144,7 +1143,7 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
               onClick={() => setDeleteModalOpen(false)}
               disabled={isDeleting}
             >
-              Cancel
+              キャンセル
             </Button>
             <Button
               variant="destructive"
@@ -1155,12 +1154,12 @@ export function ScheduleClient({ userId }: ScheduleClientProps) {
               {isDeleting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Deleting...
+                  削除中...
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Schedule
+                  スケジュールを削除
                 </>
               )}
             </Button>

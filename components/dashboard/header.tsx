@@ -37,16 +37,16 @@ export function Header({ user, profile }: HeaderProps) {
       await supabase.auth.signOut()
 
       toast({
-        title: "Signed out",
-        description: "You have been signed out successfully.",
+        title: "サインアウトしました",
+        description: "正常にサインアウトしました。",
       })
 
       router.push("/auth/login")
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Sign out failed",
-        description: "There was an error signing you out. Please try again.",
+        title: "サインアウトに失敗しました",
+        description: "エラーが発生しました。もう一度お試しください。",
       })
     }
   }
@@ -67,7 +67,7 @@ export function Header({ user, profile }: HeaderProps) {
         size="sm"
         onClick={toggleSidebar}
         className="h-10 w-10 p-0"
-        title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        title={isCollapsed ? "サイドバーを展開" : "サイドバーを折りたたむ"}
       >
         {isCollapsed ? (
           <ChevronsRight className="h-5 w-5" />
@@ -99,16 +99,16 @@ export function Header({ user, profile }: HeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </Link>
-                </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/settings">
+                <User className="mr-2 h-4 w-4" />
+                <span>設定</span>
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+              <span>ログアウト</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

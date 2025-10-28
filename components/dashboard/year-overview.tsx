@@ -20,13 +20,8 @@ interface YearOverviewProps {
 }
 
 const monthNames = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-]
-
-const monthNamesShort = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  "1月", "2月", "3月", "4月", "5月", "6月",
+  "7月", "8月", "9月", "10月", "11月", "12月"
 ]
 
 export function YearOverview({ schedules }: YearOverviewProps) {
@@ -77,9 +72,9 @@ export function YearOverview({ schedules }: YearOverviewProps) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-blue-600" />
-              Year Overview
+              年間サマリー
             </CardTitle>
-            <CardDescription>Track your schedule activity across months</CardDescription>
+            <CardDescription>月ごとのスケジュール状況を確認しましょう</CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -129,7 +124,7 @@ export function YearOverview({ schedules }: YearOverviewProps) {
                       ? "text-blue-700 dark:text-blue-300"
                       : "text-slate-600 dark:text-slate-400"
                   )}>
-                    {monthNamesShort[index]}
+                    {monthNames[index]}
                   </div>
                   
                   <div className={cn(
@@ -145,11 +140,11 @@ export function YearOverview({ schedules }: YearOverviewProps) {
                     <div className="mt-2">
                       {hasPublicSchedule ? (
                         <div className="text-xs text-green-600 dark:text-green-400 font-medium">
-                          Published
+                          公開済み
                         </div>
                       ) : (
                         <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                          Draft
+                          下書き
                         </div>
                       )}
                     </div>
@@ -164,4 +159,3 @@ export function YearOverview({ schedules }: YearOverviewProps) {
     </Card>
   )
 }
-

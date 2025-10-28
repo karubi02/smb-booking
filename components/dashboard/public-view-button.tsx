@@ -12,7 +12,7 @@ export function PublicViewButton({ slug }: PublicViewButtonProps) {
     if (slug) {
       window.open(`/${slug}`, '_blank')
     } else {
-      alert('No public URL configured. Please set up your profile slug in Settings.')
+      alert('公開URLが設定されていません。設定からスラッグを登録してください。')
     }
   }
 
@@ -21,10 +21,10 @@ export function PublicViewButton({ slug }: PublicViewButtonProps) {
       variant="outline" 
       onClick={handleOpenPublicPage}
       className="border-green-600 text-green-600 hover:bg-green-50 hover:border-green-700 hover:text-green-700"
-      title={slug ? `View your public schedule at /${slug}` : 'No public URL configured'}
+      title={slug ? `/${slug} の公開スケジュールを開く` : '公開URLが設定されていません'}
     >
       <ExternalLink className="w-4 h-4 mr-2" />
-      View Public Page
+      公開ページを表示
     </Button>
   )
 }

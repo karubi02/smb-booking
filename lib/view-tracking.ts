@@ -64,13 +64,15 @@ export async function getUserViewCounts(userId: string): Promise<{
 /**
  * Track view on public schedule page
  */
-export function trackPublicScheduleView(
+export async function trackPublicScheduleView(
   userId: string, 
   publicSlug: string,
   request?: Request
-): void {
+): Promise<void> {
   // Only track on client side to avoid server-side issues
-  if (typeof window === 'undefined') return
+  if (typeof window === 'undefined') {
+    return Promise.resolve()
+  }
 
   // Get browser info
   const userAgent = navigator.userAgent
@@ -86,7 +88,7 @@ export function trackPublicScheduleView(
   }
 
   // Track the view
-  trackView({
+  return trackView({
     user_id: userId,
     public_slug: publicSlug,
     ip_address: ipAddress,

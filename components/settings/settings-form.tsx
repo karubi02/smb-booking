@@ -73,11 +73,11 @@ export function SettingsForm({ initialData, userId }: SettingsFormProps) {
           setSlugError(null)
         } else {
           setSlugStatus('taken')
-          setSlugError('This slug is already taken')
+          setSlugError('このスラッグは既に使用されています')
         }
       } catch (error) {
         setSlugStatus('invalid')
-        setSlugError('Error checking slug availability')
+        setSlugError('スラッグの使用状況を確認できませんでした')
       }
     }, 500)
 
@@ -87,8 +87,8 @@ export function SettingsForm({ initialData, userId }: SettingsFormProps) {
   const handlePasswordChange = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast({
-        title: "Error",
-        description: "Please fill in all password fields.",
+        title: "エラー",
+        description: "すべてのパスワード項目を入力してください。",
         variant: "destructive",
       })
       return
@@ -96,8 +96,8 @@ export function SettingsForm({ initialData, userId }: SettingsFormProps) {
 
     if (newPassword !== confirmPassword) {
       toast({
-        title: "Error",
-        description: "New passwords do not match.",
+        title: "エラー",
+        description: "新しいパスワードが一致しません。",
         variant: "destructive",
       })
       return
@@ -105,8 +105,8 @@ export function SettingsForm({ initialData, userId }: SettingsFormProps) {
 
     if (newPassword.length < 6) {
       toast({
-        title: "Error",
-        description: "Password must be at least 6 characters long.",
+        title: "エラー",
+        description: "パスワードは6文字以上で入力してください。",
         variant: "destructive",
       })
       return
@@ -130,14 +130,14 @@ export function SettingsForm({ initialData, userId }: SettingsFormProps) {
       setConfirmPassword("")
 
       toast({
-        title: "Password updated",
-        description: "Your password has been changed successfully.",
+        title: "パスワードを更新しました",
+        description: "パスワードを正常に変更しました。",
       })
     } catch (error) {
       console.error("Error changing password:", error)
       toast({
-        title: "Error",
-        description: "Failed to change password. Please check your current password.",
+        title: "エラー",
+        description: "パスワードの変更に失敗しました。現在のパスワードを確認してください。",
         variant: "destructive",
       })
     } finally {
@@ -155,8 +155,8 @@ export function SettingsForm({ initialData, userId }: SettingsFormProps) {
     // Prevent saving if slug is blank and there was no original slug
     if (!slugToUse) {
       toast({
-        title: "Error",
-        description: "Public slug cannot be blank. Please enter a valid slug.",
+        title: "エラー",
+        description: "公開用スラッグを入力してください。",
         variant: "destructive",
       })
       setIsLoading(false)
@@ -166,8 +166,8 @@ export function SettingsForm({ initialData, userId }: SettingsFormProps) {
     // Validate slug if it has changed from original
     if (publicSlug.trim() !== initialData.public_slug && slugStatus !== 'available') {
       toast({
-        title: "Error",
-        description: "Please enter a valid and available slug.",
+        title: "エラー",
+        description: "利用可能なスラッグを入力してください。",
         variant: "destructive",
       })
       setIsLoading(false)
@@ -215,14 +215,14 @@ export function SettingsForm({ initialData, userId }: SettingsFormProps) {
       if (authError) throw authError
 
       toast({
-        title: "Settings updated",
-        description: "Your profile settings have been updated successfully.",
+        title: "設定を更新しました",
+        description: "プロフィール設定を保存しました。",
       })
     } catch (error) {
       console.error("❌ Error updating settings:", error)
       toast({
-        title: "Error",
-        description: "Failed to update settings. Please try again.",
+        title: "エラー",
+        description: "設定の更新に失敗しました。もう一度お試しください。",
         variant: "destructive",
       })
     } finally {
@@ -280,22 +280,22 @@ export function SettingsForm({ initialData, userId }: SettingsFormProps) {
       {/* Image Uploads Section */}
       <div className="grid gap-6 md:grid-cols-2">
         <ImageUpload
-          title="Business Logo"
-          description="Upload your business logo to display on your public schedule"
+          title="ビジネスロゴ"
+          description="公開スケジュールに表示するロゴをアップロードします"
           currentImageUrl={logoUrl}
           onImageUploaded={setLogoUrl}
           onAutoSave={handleAutoSave}
-          recommendedSize="75x75px, PNG or JPG"
+          recommendedSize="75x75px（PNG / JPG）"
           aspectRatio="1:1"
         />
         
         <ImageUpload
-          title="Banner Image"
-          description="Upload a banner image for your public schedule page"
+          title="バナー画像"
+          description="公開スケジュールページ用のバナー画像をアップロードします"
           currentImageUrl={bannerUrl}
           onImageUploaded={setBannerUrl}
           onAutoSave={handleAutoSave}
-          recommendedSize="800x200px, PNG or JPG"
+          recommendedSize="800x200px（PNG / JPG）"
           aspectRatio="16:9"
         />
       </div>
@@ -303,43 +303,43 @@ export function SettingsForm({ initialData, userId }: SettingsFormProps) {
       {/* Basic Information */}
       <div className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="display_name" className="text-sm font-medium">Display Name</Label>
+          <Label htmlFor="display_name" className="text-sm font-medium">表示名</Label>
           <Input
             id="display_name"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Enter your display name"
+            placeholder="表示名を入力"
             disabled={isLoading}
             className="h-12 placeholder:text-slate-400"
           />
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            This is how your name will appear to customers viewing your schedule.
+            公開スケジュールを閲覧するユーザーに表示される名前です。
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="business_name" className="text-sm font-medium">Business Name</Label>
+          <Label htmlFor="business_name" className="text-sm font-medium">ビジネス名</Label>
           <Input
             id="business_name"
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
-            placeholder="Enter your business name"
+            placeholder="ビジネス名を入力"
             disabled={isLoading}
             className="h-12 placeholder:text-slate-400"
           />
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            This is the name of your business that will be shown on your public schedule.
+            公開スケジュールに表示される店舗・会社名です。
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="public_slug" className="text-sm font-medium">Public Slug</Label>
+          <Label htmlFor="public_slug" className="text-sm font-medium">公開用スラッグ</Label>
           <div className="relative">
             <Input
               id="public_slug"
               value={publicSlug}
               onChange={(e) => setPublicSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-              placeholder="your-business-slug"
+              placeholder="example-slug"
               disabled={isLoading}
               className={`h-12 placeholder:text-slate-400 pr-10 ${
                 slugStatus === 'available' ? 'border-green-500 focus:border-green-500' :
@@ -357,36 +357,36 @@ export function SettingsForm({ initialData, userId }: SettingsFormProps) {
             <p className="text-sm text-red-600">{slugError}</p>
           )}
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            {`Your public schedule URL: ${
+            {`公開スケジュールURL: ${
               typeof window !== "undefined" ? window.location.origin : ""
             }/${publicSlug.trim() || initialData.public_slug || "your-slug"}`}
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="phone" className="text-sm font-medium">Phone Number</Label>
+          <Label htmlFor="phone" className="text-sm font-medium">電話番号</Label>
           <Input
             id="phone"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="Enter your phone number"
+            placeholder="電話番号を入力"
             disabled={isLoading}
             className="h-12 placeholder:text-slate-400"
           />
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Your contact phone number for customer inquiries.
+            お客様からの問い合わせに使用する連絡先電話番号です。
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
+          <Label htmlFor="email" className="text-sm font-medium">メールアドレス</Label>
           <Input 
             id="email" 
             value={initialData.email} 
             disabled 
             className="h-12 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400" 
           />
-          <p className="text-sm text-slate-600 dark:text-slate-400">Email address cannot be changed from this page.</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">メールアドレスはこのページから変更できません。</p>
         </div>
       </div>
 
@@ -399,10 +399,10 @@ export function SettingsForm({ initialData, userId }: SettingsFormProps) {
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              保存中...
             </>
           ) : (
-            "Save Changes"
+            "変更を保存"
           )}
         </Button>
       </div>

@@ -24,10 +24,10 @@ export default async function SettingsPage() {
       <div className="space-y-8">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-            Settings
+            設定
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-300 mt-2">
-            Manage your account settings and preferences
+            アカウント設定と各種情報を管理します。
           </p>
         </div>
 
@@ -35,8 +35,8 @@ export default async function SettingsPage() {
           {/* Profile Settings Form */}
           <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="text-xl">Profile Settings</CardTitle>
-              <CardDescription>Update your profile information and display preferences</CardDescription>
+              <CardTitle className="text-xl">プロフィール設定</CardTitle>
+              <CardDescription>プロフィール情報と表示内容を更新します</CardDescription>
             </CardHeader>
             <CardContent>
               <SettingsForm
@@ -57,8 +57,8 @@ export default async function SettingsPage() {
           {/* Password Change Card */}
           <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="text-xl">Change Password</CardTitle>
-              <CardDescription>Update your account password for security</CardDescription>
+              <CardTitle className="text-xl">パスワード変更</CardTitle>
+              <CardDescription>セキュリティのためにパスワードを更新します</CardDescription>
             </CardHeader>
             <CardContent>
               <PasswordChangeForm />
@@ -69,8 +69,8 @@ export default async function SettingsPage() {
           <div className="grid gap-6 md:grid-cols-2">
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-xl">Personal Information</CardTitle>
-                <CardDescription>Your account details and contact information</CardDescription>
+                <CardTitle className="text-xl">個人情報</CardTitle>
+                <CardDescription>アカウント情報と連絡先を確認します</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -78,7 +78,7 @@ export default async function SettingsPage() {
                     <Mail className="w-4 h-4 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Email Address</p>
+                    <p className="text-sm font-medium">メールアドレス</p>
                     <p className="text-sm text-slate-600 dark:text-slate-400">{user?.email}</p>
                   </div>
                 </div>
@@ -88,8 +88,8 @@ export default async function SettingsPage() {
                     <Phone className="w-4 h-4 text-indigo-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Phone Number</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">{profile?.phone || "Not provided"}</p>
+                    <p className="text-sm font-medium">電話番号</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">{profile?.phone || "未登録"}</p>
                   </div>
                 </div>
 
@@ -98,9 +98,9 @@ export default async function SettingsPage() {
                     <Calendar className="w-4 h-4 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Member Since</p>
+                    <p className="text-sm font-medium">利用開始日</p>
                     <p className="text-sm text-slate-600 dark:text-slate-400">
-                      {new Date(user?.created_at || "").toLocaleDateString("en-US", {
+                      {new Date(user?.created_at || "").toLocaleDateString("ja-JP", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
@@ -113,39 +113,39 @@ export default async function SettingsPage() {
 
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-xl">Account Status</CardTitle>
-                <CardDescription>Your account verification and security status</CardDescription>
+                <CardTitle className="text-xl">アカウントの状態</CardTitle>
+                <CardDescription>認証状況とセキュリティ状態を確認します</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Shield className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium">Email Verified</span>
+                    <span className="text-sm font-medium">メール認証</span>
                   </div>
                   <Badge variant={user?.email_confirmed_at ? "default" : "secondary"} className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
-                    {user?.email_confirmed_at ? "Verified" : "Pending"}
+                    {user?.email_confirmed_at ? "認証済み" : "未認証"}
                   </Badge>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Shield className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-medium">Account Status</span>
+                    <span className="text-sm font-medium">アカウントステータス</span>
                   </div>
-                  <Badge variant="default" className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">Active</Badge>
+                  <Badge variant="default" className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">アクティブ</Badge>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <User className="w-4 h-4 text-indigo-600" />
-                    <span className="text-sm font-medium">Public Slug</span>
+                    <span className="text-sm font-medium">公開用スラッグ</span>
                   </div>
-                  <Badge variant="outline" className="font-mono">{profile?.public_slug || "Not set"}</Badge>
+                  <Badge variant="outline" className="font-mono">{profile?.public_slug || "未設定"}</Badge>
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">User ID</p>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">ユーザーID</p>
                     <p className="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 p-2 rounded break-all">{user?.id}</p>
                   </div>
                 </div>

@@ -10,9 +10,9 @@ import { usePathname } from "next/navigation"
 import { useSidebar } from "./sidebar-context"
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Schedule", href: "/dashboard/schedule", icon: Calendar },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "ダッシュボード", href: "/dashboard", icon: Home },
+  { name: "スケジュール管理", href: "/dashboard/schedule", icon: Calendar },
+  { name: "設定", href: "/dashboard/settings", icon: Settings },
 ]
 
 export function Sidebar() {

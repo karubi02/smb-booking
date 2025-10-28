@@ -42,8 +42,8 @@ export function ImageUpload({
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
-        title: "Invalid file type",
-        description: "Please select an image file (PNG, JPG, or JPEG).",
+        title: "ファイル形式が無効です",
+        description: "PNG または JPG の画像ファイルを選択してください。",
         variant: "destructive",
       })
       return
@@ -53,8 +53,8 @@ export function ImageUpload({
     const maxSize = 5 * 1024 * 1024 // 5MB
     if (file.size > maxSize) {
       toast({
-        title: "File too large",
-        description: "Please select an image smaller than 5MB.",
+        title: "ファイルサイズが大きすぎます",
+        description: "5MB 以下の画像を選択してください。",
         variant: "destructive",
       })
       return
@@ -106,14 +106,14 @@ export function ImageUpload({
       }
 
       toast({
-        title: "Image uploaded successfully",
-        description: "Your image has been uploaded and saved.",
+        title: "画像をアップロードしました",
+        description: "画像をアップロードして保存しました。",
       })
     } catch (error) {
       console.error('Error uploading image:', error)
       toast({
-        title: "Upload failed",
-        description: "There was an error uploading your image. Please try again.",
+        title: "アップロードに失敗しました",
+        description: "画像のアップロード中にエラーが発生しました。もう一度お試しください。",
         variant: "destructive",
       })
     } finally {
@@ -172,7 +172,7 @@ export function ImageUpload({
                   <ImageIcon className="h-6 w-6 text-gray-400" />
                 )}
                 {!isUploading && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400">No image</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">画像なし</span>
                 )}
               </div>
             )}
@@ -191,17 +191,17 @@ export function ImageUpload({
               {isUploading ? (
                 <>
                   <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  Uploading...
+                  アップロード中...
                 </>
               ) : (
                 <>
                   <Upload className="mr-2 h-3 w-3" />
-                  {previewUrl ? "Change Image" : "Upload Image"}
+                  {previewUrl ? "画像を変更" : "画像をアップロード"}
                 </>
               )}
             </Button>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Recommended: {recommendedSize}
+              推奨サイズ: {recommendedSize}
             </p>
           </div>
 

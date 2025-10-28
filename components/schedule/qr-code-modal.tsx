@@ -13,7 +13,7 @@ interface QRCodeModalProps {
   businessName?: string
 }
 
-export function QRCodeModal({ isOpen, onClose, url, businessName = "Business" }: QRCodeModalProps) {
+export function QRCodeModal({ isOpen, onClose, url, businessName = "ビジネス" }: QRCodeModalProps) {
   const [downloading, setDownloading] = useState(false)
   const { toast } = useToast()
 
@@ -38,14 +38,14 @@ export function QRCodeModal({ isOpen, onClose, url, businessName = "Business" }:
       window.URL.revokeObjectURL(downloadUrl)
 
       toast({
-        title: "QR Code Downloaded",
-        description: "QR code has been saved to your downloads folder.",
+        title: "QRコードを保存しました",
+        description: "ダウンロードフォルダにQRコードを保存しました。",
       })
     } catch (error) {
       console.error("Error downloading QR code:", error)
       toast({
-        title: "Download Failed",
-        description: "Failed to download QR code. Please try again.",
+        title: "ダウンロードに失敗しました",
+        description: "QRコードのダウンロードに失敗しました。もう一度お試しください。",
         variant: "destructive",
       })
     } finally {
@@ -59,28 +59,28 @@ export function QRCodeModal({ isOpen, onClose, url, businessName = "Business" }:
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <QrCode className="h-5 w-5" />
-            Schedule QR Code
+            スケジュール用QRコード
           </DialogTitle>
-          <DialogDescription>Scan this QR code to view the schedule or download it for printing.</DialogDescription>
+          <DialogDescription>QRコードを読み取るとスケジュールページを表示できます。印刷用にダウンロードも可能です。</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col items-center space-y-4">
           <div className="bg-white p-4 rounded-lg border">
-            <img src={qrCodeUrl || "/placeholder.svg"} alt="QR Code for schedule" className="w-64 h-64" />
+            <img src={qrCodeUrl || "/placeholder.svg"} alt="スケジュール用QRコード" className="w-64 h-64" />
           </div>
 
           <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground">Point your camera at the QR code to open the schedule</p>
+            <p className="text-sm text-muted-foreground">スマートフォンのカメラで読み取るとスケジュールページが開きます</p>
             <p className="text-xs text-muted-foreground font-mono break-all">{url}</p>
           </div>
 
           <div className="flex gap-2 w-full">
             <Button variant="outline" onClick={onClose} className="flex-1 bg-transparent">
-              Close
+              閉じる
             </Button>
             <Button onClick={downloadQRCode} disabled={downloading} className="flex-1">
               <Download className="h-4 w-4 mr-2" />
-              {downloading ? "Downloading..." : "Download"}
+              {downloading ? "ダウンロード中..." : "ダウンロード"}
             </Button>
           </div>
         </div>

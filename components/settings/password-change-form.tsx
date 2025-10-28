@@ -23,8 +23,8 @@ export function PasswordChangeForm() {
   const handlePasswordChange = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast({
-        title: "Error",
-        description: "Please fill in all password fields.",
+        title: "エラー",
+        description: "すべてのパスワード項目を入力してください。",
         variant: "destructive",
       })
       return
@@ -32,8 +32,8 @@ export function PasswordChangeForm() {
 
     if (newPassword !== confirmPassword) {
       toast({
-        title: "Error",
-        description: "New passwords do not match.",
+        title: "エラー",
+        description: "新しいパスワードが一致しません。",
         variant: "destructive",
       })
       return
@@ -41,8 +41,8 @@ export function PasswordChangeForm() {
 
     if (newPassword.length < 6) {
       toast({
-        title: "Error",
-        description: "Password must be at least 6 characters long.",
+        title: "エラー",
+        description: "パスワードは6文字以上で入力してください。",
         variant: "destructive",
       })
       return
@@ -66,14 +66,14 @@ export function PasswordChangeForm() {
       setConfirmPassword("")
 
       toast({
-        title: "Password updated",
-        description: "Your password has been changed successfully.",
+        title: "パスワードを更新しました",
+        description: "パスワードを正常に変更しました。",
       })
     } catch (error) {
       console.error("Error changing password:", error)
       toast({
-        title: "Error",
-        description: "Failed to change password. Please check your current password.",
+        title: "エラー",
+        description: "パスワードの変更に失敗しました。現在のパスワードを確認してください。",
         variant: "destructive",
       })
     } finally {
@@ -84,14 +84,14 @@ export function PasswordChangeForm() {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="current_password" className="text-sm font-medium">Current Password</Label>
+        <Label htmlFor="current_password" className="text-sm font-medium">現在のパスワード</Label>
         <div className="relative">
           <Input
             id="current_password"
             type={showCurrentPassword ? "text" : "password"}
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            placeholder="Enter your current password"
+            placeholder="現在のパスワードを入力"
             disabled={isChangingPassword}
             className="h-12 placeholder:text-slate-400 pr-10"
           />
@@ -106,14 +106,14 @@ export function PasswordChangeForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="new_password" className="text-sm font-medium">New Password</Label>
+        <Label htmlFor="new_password" className="text-sm font-medium">新しいパスワード</Label>
         <div className="relative">
           <Input
             id="new_password"
             type={showNewPassword ? "text" : "password"}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Enter your new password"
+            placeholder="新しいパスワードを入力"
             disabled={isChangingPassword}
             className="h-12 placeholder:text-slate-400 pr-10"
           />
@@ -128,14 +128,14 @@ export function PasswordChangeForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="confirm_password" className="text-sm font-medium">Confirm New Password</Label>
+        <Label htmlFor="confirm_password" className="text-sm font-medium">新しいパスワード（確認）</Label>
         <div className="relative">
           <Input
             id="confirm_password"
             type={showConfirmPassword ? "text" : "password"}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Confirm your new password"
+            placeholder="新しいパスワードを再入力"
             disabled={isChangingPassword}
             className="h-12 placeholder:text-slate-400 pr-10"
           />
@@ -158,10 +158,10 @@ export function PasswordChangeForm() {
         {isChangingPassword ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Changing Password...
+            パスワードを更新しています...
           </>
         ) : (
-          "Change Password"
+          "パスワードを変更"
         )}
       </Button>
     </div>
